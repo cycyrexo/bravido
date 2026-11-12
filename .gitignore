@@ -1,0 +1,57 @@
+# ===== BRAVIDO : fichiers a ne JAMAIS commiter =====
+
+# --- Secrets / configuration locale ---
+.env
+.env.*
+!.env.example
+backend/.env
+**/*.keystore
+**/*.jks
+**/key.properties
+**/firebase-service-account*.json
+**/*service-account*.json
+backend/storage/app/private/*
+!backend/storage/app/private/.gitignore
+backend/storage/certs/*.pem
+mobile/android/app/google-services.json
+mobile/ios/Runner/GoogleService-Info.plist
+mobile/android/local.properties
+
+# --- Dependances / artefacts de build ---
+backend/vendor
+node_modules
+backend/public/storage
+backend/public/hot
+backend/.phpunit.result.cache
+mobile/build
+mobile/.dart_tool
+mobile/.flutter-plugins-dependencies
+mobile/android/.jtmp
+mobile/android/.gradle
+mobile/android/app/debug
+mobile/android/app/profile
+mobile/android/app/release
+
+# --- Logs / caches runtime ---
+backend/storage/logs/*
+!backend/storage/logs/.gitignore
+*.log
+
+# --- Donnees tierces (GUIDSANTE (c) Alliance Groupe Expert, licence incertaine) + sauvegardes BD ---
+docs/donnees/
+*.sql
+
+# --- Captures d'ecran de travail (les maquettes et logos sont conserves) ---
+docs/captures/
+/capture-*.png
+mobile/capture-*.png
+
+# --- Binaires d'outils ---
+outils/*.exe
+
+# --- IDE / OS ---
+.idea
+.vscode
+*.iml
+.DS_Store
+Thumbs.db

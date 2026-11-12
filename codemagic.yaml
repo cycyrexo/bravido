@@ -1,0 +1,93 @@
+# Compilation iOS dans le cloud (Codemagic, machines macOS) — aucun Mac nécessaire.
+#
+# Mise en place (une fois) :
+#  1. Pousser ce dépôt sur GitHub / GitLab / Bitbucket et le connecter sur https://codemagic.io
+#  2. Codemagic > Team settings > Environment variables, groupe "bravido" :
+#     - API_URL                    : URL HTTPS publique de l'API, ex. https://api.bravido.ci/api/v1
+#                                    (en test : URL d'un tunnel vers WAMP, ex. cloudflared / ngrok)
+#     - GOOGLE_SERVICE_INFO_PLIST  : contenu de GoogleService-Info.plist encodé en base64 (facultatif)
+#  3. Lancer le workflow "ios-simulateur" : l'artefact bravido-ios-simulateur.zip
+#     se charge sur https://appetize.io (plateforme iOS) pour tester l'app dans le navigateur.
+#
+# Le workflow "ios-testflight" (signé) nécessite un compte Apple Developer et
+# l'intégration App Store Connect dans Codemagic.
+
+definitions:
+  scripts:
+    - &firebase_ios
+      name: Configuration Firebase iOS
+      script: |
+        if [ -n "$GOOGLE_SERVICE_INFO_PLIST" ]; then
+          echo "$GOOGLE_SERVICE_INFO_PLIST" | base64 --decode > ios/Runner/GoogleService-Info.plist
+          echo "GoogleService-Info.plist installé"
+        else
+          echo "Pas de GoogleService-Info.plist : l'app fonctionnera sans push (alertes par SMS)"
+        fi
+    - &dependances
+      name: Dépendances Flutter et CocoaPods
+      script: |
+        flutter pub get
+        cd ios && pod install --repo-update
+
+workflows:
+  ios-simulateur:
+    name: iOS - build simulateur (test sur Appetize)
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    working_directory: mobile
+    environment:
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+      groups:
+        - bravido
+    scripts:
+      - *firebase_ios
+      - *dependances
+      - name: Analyse et tests
+        script: |
+          flutter analyze --no-fatal-infos
+          flutter test
+      - name: Build simulateur
+        script: |
+          flutter build ios --simulator --debug --dart-define=API_URL="$API_URL"
+      - name: Archive pour Appetize
+        script: |
+          cd build/ios/iphonesimulator
+          zip -r bravido-ios-simulateur.zip Runner.app
+    artifacts:
+      - mobile/build/ios/iphonesimulator/bravido-ios-simulateur.zip
+
+  ios-testflight:
+    name: iOS - TestFlight (signé)
+    instance_type: mac_mini_m2
+    max_build_duration: 90
+    working_directory: mobile
+    integrations:
+      app_store_connect: BRAVIDO App Store Connect
+    environment:
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+      groups:
+        - bravido
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: ci.bravido.bravido
+    scripts:
+      - *firebase_ios
+      - *dependances
+      - name: Signature
+        script: xcode-project use-profiles
+      - name: Build IPA
+        script: |
+          flutter build ipa --release \
+            --build-number=$(($(app-store-connect get-latest-testflight-build-number "$APP_STORE_APPLE_ID") + 1)) \
+            --dart-define=API_URL="$API_URL" \
+            --export-options-plist=/Users/builder/export_options.plist
+    artifacts:
+      - mobile/build/ios/ipa/*.ipa
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true

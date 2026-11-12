@@ -1,0 +1,57 @@
+# Alternative à Codemagic : build iOS simulateur sur les machines macOS de GitHub Actions.
+# Secrets du dépôt (Settings > Secrets and variables > Actions) :
+#   API_URL                   : URL HTTPS publique de l'API
+#   GOOGLE_SERVICE_INFO_PLIST : GoogleService-Info.plist en base64 (facultatif)
+# L'artefact bravido-ios-simulateur.zip se teste sur https://appetize.io
+
+name: iOS simulateur
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'mobile/**'
+
+jobs:
+  build-ios:
+    runs-on: macos-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Firebase iOS
+        env:
+          PLIST: ${{ secrets.GOOGLE_SERVICE_INFO_PLIST }}
+        run: |
+          if [ -n "$PLIST" ]; then echo "$PLIST" | base64 --decode > ios/Runner/GoogleService-Info.plist; fi
+
+      - name: Dépendances
+        run: |
+          flutter pub get
+          cd ios && pod install --repo-update
+
+      - name: Analyse et tests
+        run: |
+          flutter analyze --no-fatal-infos
+          flutter test
+
+      - name: Build simulateur
+        env:
+          API_URL: ${{ secrets.API_URL }}
+        run: flutter build ios --simulator --debug --dart-define=API_URL="$API_URL"
+
+      - name: Archive
+        run: cd build/ios/iphonesimulator && zip -r bravido-ios-simulateur.zip Runner.app
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bravido-ios-simulateur
+          path: mobile/build/ios/iphonesimulator/bravido-ios-simulateur.zip

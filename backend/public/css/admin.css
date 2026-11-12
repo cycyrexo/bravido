@@ -1,0 +1,89 @@
+/* BRAVIDO back-office — aucune dépendance, aucun build */
+/* Charte des maquettes : vert sarcelle, menu latéral clair, compteurs orange */
+:root {
+    --vert: #1a8580; --vert-fonce: #146a66; --vert-clair: #e0f2f1; --orange: #ff6600; --rouge: #e03131;
+    --ombre: 0 6px 18px rgba(11,42,51,.06);
+    --gris: #66737a; --bord: #dde3e3; --fond: #ffffff; --texte: #1d2327; --menu: #f2f6f6;
+}
+* { box-sizing: border-box; }
+body { margin: 0; font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--texte); background: var(--fond); }
+a { color: var(--vert-fonce); }
+.layout { display: flex; min-height: 100vh; }
+.sidebar { width: 220px; background: var(--menu); border-right: 1px solid var(--bord); padding: 20px 10px; flex-shrink: 0; }
+.sidebar .logo { font-weight: 800; font-size: 16px; padding: 0 8px; color: var(--texte); }
+.sidebar .service { font-size: 12px; color: var(--gris); padding: 0 8px 14px; }
+.sidebar a { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; margin-bottom: 2px;
+    color: #4d5960; font-weight: 600; text-decoration: none; border-radius: 8px; }
+.sidebar a:hover { background: #e8efef; }
+.sidebar a.actif { background: var(--vert-clair); color: var(--vert); }
+.sidebar .compteur { background: var(--orange); color: #fff; font-size: 11px; font-weight: 700; border-radius: 99px;
+    min-width: 18px; height: 18px; padding: 0 5px; display: inline-flex; align-items: center; justify-content: center; }
+.sidebar .separateur { border-top: 1px solid var(--bord); margin: 10px 6px; }
+.sidebar form { padding: 14px 8px; }
+.contenu { flex: 1; padding: 24px 32px; min-width: 0; }
+h1 { font-size: 22px; margin: 0 0 4px; }
+.sous-titre { color: var(--gris); margin: 0 0 20px; }
+.kpi .valeur.orange { color: var(--orange); }
+.kpi .valeur.rouge { color: var(--rouge); }
+h2 { font-size: 18px; margin: 24px 0 12px; }
+.carte { background: #fff; border: 1px solid var(--bord); border-radius: 14px; box-shadow: var(--ombre); padding: 20px; margin-bottom: 20px; }
+.grille { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; }
+.kpi { background: #fff; border: 1px solid var(--bord); border-radius: 14px; box-shadow: var(--ombre); padding: 16px; }
+.kpi .valeur { font-size: 28px; font-weight: 700; }
+.kpi .libelle { color: var(--gris); font-size: 13px; }
+table { width: 100%; border-collapse: collapse; background: #fff; }
+th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--bord); vertical-align: top; }
+th { background: #eef2f3; font-size: 13px; color: var(--gris); }
+tr.modifie td { background: #fff7e6; }
+tr.erreur td { background: #fdecea; }
+tr.doublon td { background: #fff7e6; }
+label { display: block; font-weight: 600; font-size: 13px; margin: 12px 0 4px; }
+input[type=text], input[type=email], input[type=password], input[type=number], input[type=date], input[type=url], input[type=file], select, textarea {
+    width: 100%; padding: 8px 10px; border: 1px solid #c4ccd1; border-radius: 10px; font: inherit; background: #fff;
+}
+textarea { min-height: 90px; }
+.ligne { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0 16px; }
+.cases { display: flex; flex-wrap: wrap; gap: 6px 18px; }
+.cases label { font-weight: 400; margin: 0; }
+.btn { display: inline-block; padding: 8px 16px; border-radius: 10px; font-weight: 600; border: 1px solid transparent; background: var(--vert); color: #fff; text-decoration: none; cursor: pointer; font: inherit; }
+.btn:hover { background: var(--vert-fonce); }
+.btn.secondaire { background: #fff; color: var(--texte); border-color: #c4ccd1; }
+.btn.danger { background: var(--rouge); }
+.btn.petit { padding: 4px 10px; font-size: 13px; }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 16px; }
+.filtres { display: flex; gap: 10px; flex-wrap: wrap; align-items: end; margin-bottom: 16px; }
+.filtres > * { width: auto; }
+.pastille { display: inline-block; padding: 1px 8px; border-radius: 99px; font-size: 12px; font-weight: 600; background: #e7ecee; color: var(--gris); }
+.pastille.vert { background: var(--vert-clair); color: var(--vert-fonce); }
+.pastille.orange { background: #fdebd9; color: #a24f06; }
+.pastille.rouge { background: #fbe0de; color: var(--rouge); }
+.flash { padding: 12px 16px; border-radius: 12px; margin-bottom: 16px; }
+.flash.succes { background: var(--vert-clair); color: var(--vert-fonce); }
+.flash.erreurs { background: #fbe0de; color: var(--rouge); }
+.flash ul { margin: 0; padding-left: 18px; }
+.muted { color: var(--gris); font-size: 13px; }
+#carte { height: 340px; border-radius: 14px; border: 1px solid var(--bord); }
+.pagination { display: flex; gap: 8px; list-style: none; padding: 0; margin: 16px 0; }
+.pagination li a, .pagination li span { padding: 6px 12px; border: 1px solid var(--bord); border-radius: 10px; background: #fff; text-decoration: none; display: inline-block; }
+.login { max-width: 380px; margin: 10vh auto; }
+inline-form, form.inline { display: inline; }
+
+/* Logo officiel BRAVIDO */
+.sidebar .logo img { display: block; width: 100%; max-width: 150px; height: auto; margin-bottom: 6px; }
+.login-logo { text-align: center; margin: 4px 0 18px; }
+.login-logo img { display: block; width: 100%; max-width: 240px; height: auto; margin: 0 auto 6px; }
+.login-logo span { display: block; font-size: 13px; font-weight: 600; color: var(--gris); letter-spacing: .04em; text-transform: uppercase; }
+
+/* Finitions douces alignées sur l'application mobile */
+.btn, input, select, textarea, .sidebar a { transition: background-color .15s, border-color .15s, box-shadow .15s; }
+.btn:focus-visible, a:focus-visible { outline: 3px solid rgba(26,133,128,.35); outline-offset: 2px; }
+input:focus, select:focus, textarea:focus { outline: none; border-color: var(--vert); box-shadow: 0 0 0 3px rgba(26,133,128,.18); }
+.btn.secondaire:hover { background: #f2f6f6; }
+.btn.danger:hover { background: #c22424; }
+.pastille.orange { background: #ffe8d6; color: #a64200; }
+.kpi .valeur.orange { color: #d95700; }
+th:first-child { border-top-left-radius: 10px; }
+th:last-child { border-top-right-radius: 10px; }
+tbody tr:hover td { background: #f7fafa; }
+tbody tr.modifie:hover td, tbody tr.doublon:hover td { background: #fff1d6; }
+tbody tr.erreur:hover td { background: #fbdcd8; }
