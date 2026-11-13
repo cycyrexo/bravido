@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\AlerteDestinataire;
+use App\Models\AlerteEvenement;
 use App\Services\AlerteService;
 use App\Services\Notifier;
 use Illuminate\Bus\Queueable;
@@ -41,6 +42,7 @@ class EnvoyerAlerteDestinataire implements ShouldQueue
 
         if ($pushOk) {
             $destinataire->forceFill(['push_envoye_at' => now()])->save();
+            AlerteEvenement::noter($alerte->id, 'push_envoye', $destinataire, 'push');
             VerifierReceptionAlerte::dispatch($destinataire->id)
                 ->onQueue('alertes')
                 ->delay(now()->addSeconds(config('bravido.alerte.delai_sms_secours_s')));

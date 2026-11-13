@@ -34,6 +34,14 @@ class AlerteResource extends JsonResource
                 'telephone' => $this->user->telephone,
                 'groupe_sanguin' => $this->user->groupe_sanguin,
             ]),
+            // Fiche médicale : uniquement si opt-in + alerte active + complice accepté (sinon null)
+            'fiche_medicale' => $this->when(! $estProprietaire && $this->relationLoaded('user'), fn () => $this->ficheMedicalePour($request->user())?->versApi()),
+            // Messages vocaux (propriétaire et destinataires acceptés)
+            'audios' => $this->when($this->relationLoaded('audios'), fn () => $this->audios->map(fn ($a) => [
+                'id' => $a->id,
+                'duree_s' => $a->duree_s,
+                'created_at' => $a->created_at->toIso8601String(),
+            ])->values()),
             // Vue propriétaire : suivi par complice (URG-04)
             'destinataires' => $this->when($estProprietaire && $this->relationLoaded('destinataires'), fn () => $this->destinataires->map(fn ($d) => [
                 'id' => $d->id,

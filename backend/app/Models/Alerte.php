@@ -17,7 +17,7 @@ class Alerte extends Model
     ];
 
     protected $fillable = [
-        'motif', 'lat', 'lng', 'precision_m', 'statut',
+        'motif', 'motif_detail', 'lat', 'lng', 'precision_m', 'statut',
         'lien_token', 'started_at', 'expires_at', 'closed_at',
     ];
 
@@ -54,6 +54,44 @@ class Alerte extends Model
         return $this->hasOne(AlertePosition::class)->latestOfMany('recorded_at');
     }
 
+    public function evenements(): HasMany
+    {
+        return $this->hasMany(AlerteEvenement::class);
+    }
+
+    public function audios(): HasMany
+    {
+        return $this->hasMany(AlerteAudio::class)->orderBy("id");
+    }
+
+    /** Le destinataire est-il un complice ayant accepté, destinataire de cette alerte ? */
+    public function estDestinataireAccepte(?User $viewer): bool
+    {
+        if (! $viewer) {
+            return false;
+        }
+
+        return $this->destinataires()->where("destinataire_user_id", $viewer->id)->exists()
+            && Complice::where("user_id", $this->user_id)
+                ->where("complice_user_id", $viewer->id)
+                ->where("statut", "accepte")
+                ->exists();
+    }
+
+    /**
+     * Fiche médicale visible par ce complice : alerte active ET complice accepté ET opt-in du propriétaire.
+     */
+    public function ficheMedicalePour(?User $viewer): ?FicheMedicale
+    {
+        if (! $this->estActive() || ! $this->estDestinataireAccepte($viewer)) {
+            return null;
+        }
+        $fiche = FicheMedicale::where("user_id", $this->user_id)->where("partage", true)->first();
+        $fiche?->setRelation("user", $this->user);
+
+        return $fiche;
+    }
+
     public function estActive(): bool
     {
         return $this->statut === 'active' && $this->expires_at->isFuture();
@@ -66,6 +104,6 @@ class Alerte extends Model
 
     public function libelleMotif(): string
     {
-        return self::MOTIFS[$this->motif] ?? $this->motif;
+        return $this->motif_detail ?: (self::MOTIFS[$this->motif] ?? $this->motif);
     }
 }

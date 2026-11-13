@@ -1,0 +1,11 @@
+- [F0] housekeeping: fichiers 395685/531450 (junk 'log ... -') supprimes; erreur sqlite: .env OK (mysql), phpunit mysql; defaut config/database.php passe a mysql (cause probable: lecture .env transitoire) 
+- [F22] OK: table alerte_evenements, AlerteEvenement::noter, detail /admin/alertes/{id}, export CSV admin, purge 12 mois, tests AuditAlerteTest (129 tests verts)
+- [F23-backend] OK: SanteSysteme, GET /sante, bravido:heartbeat (schedule/min), carte dashboard admin, outils/surveillance.ps1, .github/workflows/tests.yml, SanteTest. Reste: tests Flutter (F23c)
+- [F23] OK complet: tests Flutter mobile/test/parcours_test.dart (+support/api_factice.dart, Api.dio visibleForTesting) 79 tests verts. Prochain: F20 hors ligne
+- [F20-backend] OK: GET /villes/{id}/export (version/ETag/gzip/pagination), tests ExportVilleTest, mobile/lib/core/synonymes.dart genere (outils/generer-synonymes.php). Reste: app (stockage local, moteur local, Api fallback, bandeau, reglages)
+- [F20-mobile] code OK: moteur_local.dart, hors_ligne.dart, Api.get fallback, bandeau, SectionHorsLigne (Reglages), tests hors_ligne_test.dart (98 tests Flutter verts). Reste: build+capture emulateur
+- [F20] OK complet: build+install, capture f20-0x (reglages, telechargement 928 etabs 437Ko, liste hors ligne avec bandeau). Prochain: F13 (backend avis ecrit: migration/models/AvisController/routes; reste admin /admin/avis, tests, mobile)
+- [F13] backend OK (AvisTest 11 verts, admin /admin/avis), mobile code ecrit (avis_widgets.dart, mes_avis_screen.dart, branche fiche+compte). Reste: test Flutter avis, build/capture avec F21/F19
+- [F21] code OK (rapports.dart, section Reglages, gradle crashlytics 3.0.6, manifest collection=false, tests 103 Flutter verts). Build en cours pour valider; puis F19
+- [F19] backend OK (AbonnementTest 16 verts; 168 tests PHP verts), build F21 OK (crashlytics gradle ok). Mobile AbonnementScreen ecrit. Reste: tests Flutter abonnement, build final, captures F13/F21/F19, curl smoke, nettoyage, docs
+- [fin] tout livre; docs (README, COMMENT-TESTER) mis a jour; app sur accueil; donnees de test nettoyees. Rapport a envoyer.

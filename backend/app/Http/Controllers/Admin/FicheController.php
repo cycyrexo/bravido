@@ -26,6 +26,8 @@ class FicheController extends Controller
         'adresse' => 'Adresse', 'repere' => 'Repère', 'description' => 'Description',
         'lat' => 'Latitude', 'lng' => 'Longitude', 'tel1' => 'Téléphone 1', 'tel2' => 'Téléphone 2',
         'horaires' => 'Horaires', 'h24' => 'Ouvert 24 h/24', 'services' => 'Services', 'assurances' => 'Assurances',
+        'description_longue' => 'Description détaillée (Premium)',
+        'role' => 'Fonction du demandeur', 'telephone' => 'Téléphone du demandeur',
     ];
 
     public function __construct(private readonly Notifier $notifier) {}
@@ -86,6 +88,21 @@ class FicheController extends Controller
             });
 
             Journal::log('fiche.validation_souscription', $fiche, null, $etab->toArray());
+        } elseif ($fiche->type === 'revendication') {
+            $etab = $fiche->etablissement;
+            abort_unless($etab, 422, "L'établissement concerné n'existe plus.");
+            $avant = ['responsable_id' => $etab->responsable_id];
+
+            DB::transaction(function () use ($fiche, $etab, $request) {
+                $etab->forceFill(['responsable_id' => $fiche->soumis_par])->save();
+                // L'utilisateur garde son accès normal ; seuls les comptes « user » passent resp_etab
+                if ($fiche->auteur->role === 'user') {
+                    $fiche->auteur->forceFill(['role' => 'resp_etab'])->save();
+                }
+                $this->marquer($fiche, 'validee', $request);
+            });
+
+            Journal::log('fiche.validation_revendication', $etab, $avant, ['responsable_id' => $fiche->soumis_par]);
         } else {
             $etab = $fiche->etablissement;
             abort_unless($etab, 422, 'L\'établissement concerné n\'existe plus.');
@@ -112,7 +129,7 @@ class FicheController extends Controller
             Journal::log('fiche.validation_correction', $etab, $avant, $etab->only(array_keys($champs)));
         }
 
-        $this->notifier->push($fiche->auteur, 'BRAVIDO', 'Votre fiche a été validée. Merci pour votre contribution.', [
+        $this->notifier->push($fiche->auteur, 'BRAVIDO', $fiche->type === 'revendication' ? 'Vous êtes maintenant responsable de « '.$etab->nom.' » : retrouvez-le dans Espace utilisateur › Mon établissement.' : 'Votre fiche a été validée. Merci pour votre contribution.', [
             'type' => 'fiche', 'fiche_id' => $fiche->id,
         ]);
 
@@ -127,7 +144,7 @@ class FicheController extends Controller
         $this->marquer($fiche, 'rejetee', $request, $data);
         Journal::log('fiche.rejet', $fiche, null, $data);
 
-        $this->notifier->push($fiche->auteur, 'BRAVIDO', 'Votre fiche n\'a pas pu être validée : '.$data['motif_rejet'], [
+        $this->notifier->push($fiche->auteur, 'BRAVIDO', 'Votre '.($fiche->type === 'revendication' ? 'demande' : 'fiche')." n'a pas pu être validée : ".$data['motif_rejet'], [
             'type' => 'fiche', 'fiche_id' => $fiche->id,
         ]);
 

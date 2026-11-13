@@ -23,6 +23,8 @@ plugins {
     id("org.jetbrains.kotlin.android") version "2.3.20" apply false
     // Firebase (FCM) : lit android/app/google-services.json
     id("com.google.gms.google-services") version "4.4.4" apply false
+    // Crashlytics (F21) : rapports d'erreurs anonymes, désactivés tant que l'utilisateur ne les active pas
+    id("com.google.firebase.crashlytics") version "3.0.6" apply false
 }
 
 include(":app")

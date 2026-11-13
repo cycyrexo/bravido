@@ -17,6 +17,18 @@
         <div class="flash erreurs">Motif du rejet : {{ $fiche->motif_rejet }}</div>
     @endif
 
+    @if($fiche->type === 'revendication')
+        <h2>Demande de gestion de l'établissement</h2>
+        <table>
+            <tbody>
+            <tr><td>Établissement</td><td>{{ $fiche->etablissement?->nom }} · {{ $fiche->etablissement?->commune?->nom }}</td></tr>
+            <tr><td>Fonction du demandeur</td><td>{{ $fiche->donnees['role'] ?? '—' }}</td></tr>
+            <tr><td>Téléphone du demandeur</td><td>{{ $fiche->donnees['telephone'] ?? '—' }}</td></tr>
+            <tr><td>Responsable actuel</td><td>{{ $fiche->etablissement?->responsable ? $fiche->etablissement->responsable->nomAffiche().' ('.$fiche->etablissement->responsable->telephone.')' : 'Aucun' }}</td></tr>
+            </tbody>
+        </table>
+        <p class="muted">Vérifiez le justificatif et rappelez le demandeur avant de valider : il pourra modifier la fiche (modérée) et déclarer les gardes.</p>
+    @else
     <h2>{{ $fiche->type === 'correction' ? 'Comparaison avant / après' : 'Informations transmises' }}</h2>
     <table>
         <thead><tr><th>Champ</th>@if($fiche->type === 'correction')<th>Actuellement</th>@endif<th>Proposé</th></tr></thead>
@@ -30,6 +42,7 @@
         @endforeach
         </tbody>
     </table>
+    @endif
 
     @if($fiche->pieces)
         <h2>Pièces jointes</h2>
@@ -71,6 +84,8 @@
                         <div><label for="lng">Longitude</label><input type="number" step="0.0000001" id="lng" name="lng" value="{{ old('lng', $d['lng'] ?? '') }}" required></div>
                     </div>
                     <p class="muted">Sans GPS transmis : relevez la position sur place ou sur une carte avant de valider.</p>
+                @elseif($fiche->type === 'revendication')
+                    <p class="muted">Le demandeur deviendra responsable de cet établissement (rôle « resp_etab », accès utilisateur inchangé).@if($fiche->etablissement?->responsable) Le responsable actuel sera remplacé.@endif</p>
                 @else
                     <p class="muted">Les modifications surlignées seront appliquées et la date de vérification mise à jour.</p>
                 @endif

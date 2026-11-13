@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/langue.dart';
 
 import '../../app.dart';
 import '../../core/api.dart';
@@ -61,7 +62,7 @@ class _ComplicesScreenState extends State<ComplicesScreen> {
 
   Future<void> _inviter() async {
     if (_nom.text.trim().isEmpty || _telephone.text.trim().isEmpty) {
-      afficherMessage(context, 'Indiquez le nom et le téléphone.');
+      afficherMessage(context, tr('Indiquez le nom et le téléphone.', 'Enter the name and phone number.'));
       return;
     }
     setState(() => _envoi = true);
@@ -71,7 +72,7 @@ class _ComplicesScreenState extends State<ComplicesScreen> {
       _telephone.clear();
       if (mounted) FocusScope.of(context).unfocus();
       await _charger();
-      if (mounted) afficherMessage(context, 'Invitation envoyée.');
+      if (mounted) afficherMessage(context, tr('Invitation envoyée.', 'Invitation sent.'));
     } on ApiException catch (e) {
       if (mounted) afficherMessage(context, e.message);
     } finally {
@@ -83,11 +84,11 @@ class _ComplicesScreenState extends State<ComplicesScreen> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Retirer ${c['nom']} ?'),
-        content: const Text('Cette personne ne sera plus prévenue en cas d\'alerte.'),
+        title: Text(tr('Retirer ${c['nom']} ?', 'Remove ${c['nom']}?')),
+        content: Text(tr('Cette personne ne sera plus prévenue en cas d\'alerte.', 'This person will no longer be alerted in case of an alert.')),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Annuler')),
-          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Retirer')),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: Text(tr('Annuler', 'Cancel'))),
+          FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(tr('Retirer', 'Remove'))),
         ],
       ),
     );
@@ -114,17 +115,17 @@ class _ComplicesScreenState extends State<ComplicesScreen> {
     final complices = _complices;
 
     return Scaffold(
-      appBar: const BarreTitre('Mes complices'),
+      appBar: BarreTitre(tr('Mes complices', 'My accomplices')),
       body: complices == null
           ? (_erreur != null ? MessageVide(_erreur!, onReessayer: _charger) : const Chargement())
           : RefreshIndicator(
               onRefresh: _charger,
               child: ListView(padding: const EdgeInsets.all(16), children: [
-                Info('Jusqu\'à $_max personnes de confiance. Chacune doit accepter votre invitation pour recevoir vos alertes.'),
+                Info(tr('Jusqu\'à $_max personnes de confiance. Chacune doit accepter votre invitation pour recevoir vos alertes.', 'Up to $_max trusted people. Each must accept your invitation to receive your alerts.')),
                 for (final c in complices.where((c) => c['statut'] != 'refuse')) _ligne(c),
                 if (complices.where((c) => c['statut'] != 'refuse').length < _max) _formulaire(),
                 if (_invitations.isNotEmpty) ...[
-                  const TitreSection('Invitations reçues'),
+                  TitreSection(tr('Invitations reçues', 'Invitations received')),
                   for (final i in _invitations) _invitation(i),
                 ],
               ]),
@@ -142,14 +143,14 @@ class _ComplicesScreenState extends State<ComplicesScreen> {
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text('${c['nom']}', style: const TextStyle(fontWeight: FontWeight.w700)),
-              Text('${c['telephone']}', style: const TextStyle(color: Couleurs.texteSecondaire, fontSize: 13)),
+              Text('${c['telephone']}', style: TextStyle(color: Couleurs.texteSecondaire, fontSize: 13)),
             ]),
           ),
-          c['statut'] == 'accepte' ? const Pastille.verte('Accepté') : const Pastille.orange('Invitation envoyée'),
+          c['statut'] == 'accepte' ? Pastille.verte(tr('Accepté', 'Accepted')) : const Pastille.orange('Invitation envoyée'),
           IconButton(
-            tooltip: 'Retirer ce complice',
+            tooltip: tr('Retirer ce complice', 'Remove this accomplice'),
             onPressed: () => _retirer(c),
-            icon: const Icon(Icons.close_rounded, size: 18, color: Couleurs.texteSecondaire),
+            icon: Icon(Icons.close_rounded, size: 18, color: Couleurs.texteSecondaire),
           ),
         ]),
       ),
@@ -161,15 +162,15 @@ class _ComplicesScreenState extends State<ComplicesScreen> {
       child: Padding(
         padding: const EdgeInsets.all(14),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('Nom', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+          Text(tr('Nom', 'Name'), style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
           const SizedBox(height: 4),
           TextField(
             controller: _nom,
             textCapitalization: TextCapitalization.words,
-            decoration: const InputDecoration(hintText: 'Ex. Mariam (sœur)'),
+            decoration: InputDecoration(hintText: tr('Ex. Mariam (sœur)', 'E.g. Mariam (sister)')),
           ),
           const SizedBox(height: 10),
-          const Text('Téléphone', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+          Text(tr('Téléphone', 'Phone'), style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
           const SizedBox(height: 4),
           TextField(controller: _telephone, keyboardType: TextInputType.phone, decoration: const InputDecoration(hintText: '07 00 00 00 00')),
           const SizedBox(height: 12),
@@ -177,7 +178,7 @@ class _ComplicesScreenState extends State<ComplicesScreen> {
             style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48)),
             onPressed: _envoi ? null : _inviter,
             icon: const Icon(Icons.person_add_alt_1_rounded, size: 18),
-            label: Text(_envoi ? 'Envoi…' : 'Inviter'),
+            label: Text(_envoi ? tr('Envoi…', 'Sending…') : tr('Inviter', 'Invite')),
           ),
         ]),
       ),
@@ -193,28 +194,28 @@ class _ComplicesScreenState extends State<ComplicesScreen> {
           Row(children: [
             Expanded(child: Text('${proprietaire['nom']}', style: const TextStyle(fontWeight: FontWeight.w700))),
             switch ('${i['statut']}') {
-              'accepte' => const Pastille.verte('Accepté'),
-              'refuse' => const Pastille.rouge('Refusé'),
-              _ => const Pastille.orange('À confirmer'),
+              'accepte' => Pastille.verte(tr('Accepté', 'Accepted')),
+              'refuse' => Pastille.rouge(tr('Refusé', 'Declined')),
+              _ => Pastille.orange(tr('À confirmer', 'To confirm')),
             },
           ]),
           // Sans nom renseigné, le titre affiche déjà le numéro
           if (proprietaire['nom'] != proprietaire['telephone'])
-            Text('${proprietaire['telephone']}', style: const TextStyle(color: Couleurs.texteSecondaire, fontSize: 13)),
+            Text('${proprietaire['telephone']}', style: TextStyle(color: Couleurs.texteSecondaire, fontSize: 13)),
           const SizedBox(height: 8),
           if (i['statut'] == 'invite')
             Wrap(spacing: 8, children: [
-              FilledButton(onPressed: () => _repondre(i, true), child: const Text('Accepter')),
-              OutlinedButton(onPressed: () => _repondre(i, false), child: const Text('Refuser')),
+              FilledButton(onPressed: () => _repondre(i, true), child: Text(tr('Accepter', 'Accept'))),
+              OutlinedButton(onPressed: () => _repondre(i, false), child: Text(tr('Refuser', 'Decline'))),
             ])
           else if (i['statut'] == 'accepte')
             Wrap(spacing: 8, children: [
               TextButton.icon(
                 onPressed: () => appeler('${proprietaire['telephone']}'),
                 icon: const Icon(Icons.call, size: 18),
-                label: const Text('Appeler'),
+                label: Text(tr('Appeler', 'Call')),
               ),
-              TextButton(onPressed: () => _repondre(i, false), child: const Text('Quitter ce cercle')),
+              TextButton(onPressed: () => _repondre(i, false), child: Text(tr('Quitter ce cercle', 'Leave this circle'))),
             ]),
         ]),
       ),

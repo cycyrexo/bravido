@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import '../core/langue.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 
@@ -107,15 +108,15 @@ class _ListeEtablissementsState extends State<ListeEtablissements> {
 
             if (_chargement) return const Chargement();
             if (_erreur != null) return MessageVide(_erreur!, icone: Icons.cloud_off, onReessayer: () => _charger(reinitialiser: _items.isEmpty));
-            if (_items.isEmpty) return const MessageVide('Aucun résultat pour ces critères.', icone: Icons.search_off);
+            if (_items.isEmpty) return MessageVide(tr('Aucun résultat pour ces critères.', 'No results for these criteria.'), icone: Icons.search_off);
             if (_resteDesPages) {
               // Secours si le défilement n'a pas déclenché le chargement (liste plus courte que l'écran)
-              return Center(child: TextButton(onPressed: _pageSuivante, child: const Text('Afficher plus')));
+              return Center(child: TextButton(onPressed: _pageSuivante, child: Text(tr('Afficher plus', 'Show more'))));
             }
             return Padding(
               padding: const EdgeInsets.only(top: 10),
-              child: Text('${_items.length} résultat${_items.length > 1 ? 's' : ''}',
-                  textAlign: TextAlign.center, style: const TextStyle(color: Couleurs.texteSecondaire, fontSize: 12.5)),
+              child: Text(tr('${_items.length} résultat${_items.length > 1 ? 's' : ''}', '${_items.length} result${_items.length > 1 ? 's' : ''}'),
+                  textAlign: TextAlign.center, style: TextStyle(color: Couleurs.texteSecondaire, fontSize: 12.5)),
             );
           },
         ),

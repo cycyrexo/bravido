@@ -1,0 +1,22 @@
+# Progres vague 3 (F12,F10,F16,F11,F14,F15)
+- [debut] exploration du code
+- [F12] ouverture.dart + 35 tests OK, pastilles tile/fiche. Donnees test BD: etab 25,26,28,29,33 position_precise=1 (28,33 horaires texte, h24=0) -> A RESTAURER en fin (position_precise=0, horaires=NULL, h24: 28=0,33=0 d'origine)
+- [F12] valide emulateur (captures f12-liste, f12-fiche). Prochain: F10 backend /recherche
+- [F10] backend: app/Services/Recherche.php + Api/RechercheController (routes recherche, recherche/suggestions) OK en smoke; reste: tests PHP + mobile (etab 112 restaure; 363 pharmacie Cocody publiee dispo pour test premium)
+- [F10] backend + 13 tests PHP OK. Reste: mobile ecran recherche
+- [F16] partage.dart + test + bouton fiche OK (a valider emulateur). [F10] mobile recherche_screen OK (capture f10). [F11] backend /etablissements/carte fait, tests PHP + mobile a faire
+  (lat/lng de 25,26,28,29,33 modifies pour la carte: restaurer lat=5.4263160,lng=-4.0202250)
+- [F10][F16] valides emulateur (captures f10-resultats-dentiste, f16-partage). F11 backend + 5 tests PHP OK. Reste F11 mobile (flutter_map_marker_cluster 1.4.0 compatible flutter_map 7.0.2)
+- [F11] mobile carte_screen OK emulateur (f11-carte, f11-carte-fiche); tuile Carte sur accueil; a ajouter: tests widget? pas necessaire. Rappels pure logic rappels.dart + test ecrits (pas encore lances)
+- [F14] rappels.dart(+test OK), service_rappels.dart, rappels_screen.dart, manifest+gradle desugar, tuile accueil+ligne compte: build en cours, a tester emulateur
+- [F15] etat trouve: Couleurs theme-aware (app.dart), apparence.dart, reglages_screen, communs.dart partiellement migres; erreurs communs.dart corrigees, analyze OK. F14 emulateur a tester ensuite, F15 a finir (EN)
+- [sante] analyze 0 issue (const auto-corriges), flutter test 64 OK, php artisan test 121 OK. build APK en cours
+- [F14] valide emulateur (f14-1..3): creation, 'Prochain', bandeau alarmes approximatives, alarme planifiee; rappel test supprime. Prochain: F15 (traduction EN, couleurs, reglages cables accueil+compte)
+- [F15] traduction EN: home, communs, pharmacies, etablissements, alerte_screen, detail OK (outils scratchpad rep.php/loop.sh). Reste: sos, alerte active/recue, trajet, faux appel, fiche medicale, compte, reglages cables, captures sombre/EN
+- [F15] traduit EN: sos, alerte active/recue, trajet, faux appel, fiche medicale. Reste compte_screen, complices?, reglages cables (compte), message_vocal, puis build+captures
+- [F15] tests apparence_langue_test (contraste WCAG clair/sombre, langue) ajoutes; texteSecondaire clair assombri (5A6870)
+- COMMENT-TESTER.md: section H Vague 3 ajoutee. En attente: build APK (bkrpza7he) -> captures EN/sombre/reglages
+- [F15] captures sombre OK (reglages, accueil, alerte, compte, pharmacies); correctifs logo sombre + icones tuiles; rebuild en cours
+- [restauration] etab 25,26,28,29,33 remis position_precise=0, lat/lng d'origine, horaires NULL (28,33)
+- [fin] build final installe, app sur accueil, theme Systeme, langue Auto. Rapport a rediger.
+- [fin] rappel test supprime, app sur accueil. TERMINE.

@@ -22,6 +22,27 @@
         @endforeach
     </div>
 
+    @if($sante)
+        <div class="carte" style="margin-top:24px;max-width:760px" id="sante">
+            <h2 style="margin-top:0">Santé du système
+                @if(collect($sante)->every(fn ($c) => $c['ok'])) <span class="pastille vert">Tout est OK</span>
+                @else <span class="pastille rouge">À surveiller</span> @endif
+            </h2>
+            <table>
+                <tbody>
+                @foreach($sante as $c)
+                    <tr>
+                        <td style="width:34%"><strong>{{ $c['libelle'] }}</strong></td>
+                        <td style="width:80px"><span class="pastille {{ $c['ok'] ? 'vert' : 'rouge' }}">{{ $c['ok'] ? 'OK' : 'Alerte' }}</span></td>
+                        <td class="muted">{{ $c['detail'] }}</td>
+                    </tr>
+                @endforeach
+                </tbody>
+            </table>
+            <p class="muted" style="margin:10px 0 0">Seuils : file d'attente &gt; 120 s, battement du planificateur &gt; 3 min, disque &lt; 1 Go. Point de contrôle externe : <code>/api/v1/sante</code>.</p>
+        </div>
+    @endif
+
     <div class="ligne" style="margin-top:24px">
         <div class="carte">
             <h2 style="margin-top:0">Fiches en attente</h2>

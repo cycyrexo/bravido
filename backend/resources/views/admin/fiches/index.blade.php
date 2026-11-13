@@ -2,7 +2,7 @@
 @section('titre', 'Fiches')
 
 @section('contenu')
-    <h1>Fiches de souscription et de correction</h1>
+    <h1>Fiches de souscription, de correction et de revendication</h1>
 
     <div class="actions" style="margin:0 0 16px">
         @foreach(['en_attente' => 'En attente', 'validee' => 'Validées', 'rejetee' => 'Rejetées'] as $cle => $libelle)
@@ -15,7 +15,7 @@
         <tbody>
         @forelse($fiches as $fiche)
             <tr>
-                <td><span class="pastille {{ $fiche->type === 'souscription' ? 'vert' : 'orange' }}">{{ $fiche->type }}</span></td>
+                <td><span class="pastille {{ ['souscription' => 'vert', 'revendication' => 'rouge'][$fiche->type] ?? 'orange' }}">{{ $fiche->type }}</span></td>
                 <td>{{ $fiche->donnees['nom'] ?? $fiche->etablissement?->nom ?? '—' }}</td>
                 <td>{{ $fiche->auteur->nomAffiche() }}<br><span class="muted">{{ $fiche->auteur->telephone }}</span></td>
                 <td>{{ $fiche->created_at->format('d/m/Y H:i') }}</td>

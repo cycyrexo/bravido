@@ -40,9 +40,11 @@ Cochez chaque ligne quand le résultat attendu est bien obtenu.
 
 ### A. Pharmacies de garde (sans compte)
 
+> **Important :** la base contient désormais uniquement les 1 687 établissements réels (annuaire GUIDSANTE) et **aucun programme de garde**. Tant qu'aucun programme n'est publié, la carte « Pharmacies de garde » est vide et la liste de garde n'affiche aucune pharmacie : c'est normal. Pour tester cette section, commencez par la section **D2** (back-office : **Gardes**, choisir la ville et la période, cocher quelques pharmacies d'Abidjan, **Publier le programme**), puis rouvrez l'application.
+
 | Étape | Action | Résultat attendu |
 |---|---|---|
-| A1 | Regardez l'écran d'accueil | Une carte **« Pharmacies de garde près de vous »** indique la période (ex. *Du 09/11 au 15/11 · 9 pharmacies à Abidjan*) |
+| A1 | Regardez l'écran d'accueil | Une carte **« Pharmacies de garde près de vous »** indique la période (après publication d'un programme en D2, ex. *Du 09/11 au 15/11 · 5 pharmacies à Abidjan*) |
 | A2 | Touchez **Voir** (ou la tuile **Pharmacies Jour & Garde**) | La liste des pharmacies de garde s'affiche, de la plus proche à la plus éloignée, avec la distance |
 | A3 | Utilisez les filtres **Toutes communes** / **Toutes assurances** | La liste se réduit selon le filtre choisi |
 | A4 | Touchez une pharmacie | Sa fiche s'ouvre : nom, adresse, distance, téléphone, horaires |
@@ -93,7 +95,7 @@ Dans le navigateur, connectez-vous avec `admin@bravido.ci` / `ChangezMoi!2026`.
 
 1. Menu **Gardes**, puis la saisie du **Programme de garde**.
 2. Choisissez la ville **Abidjan**, la période (**Début** / **Fin**), cliquez **Afficher**.
-3. Cochez les pharmacies de garde, cliquez **Publier le programme**.
+3. Cochez les pharmacies de garde (pour tester, quelques pharmacies d'Abidjan suffisent), cliquez **Publier le programme**. Il n'y a plus de programme préchargé : tant que vous n'en publiez pas, le tableau de bord affiche le bandeau rouge « Aucune pharmacie de garde en cours ».
    Résultat attendu : message de confirmation. Dans l'application, fermez puis rouvrez l'accueil : la carte *Pharmacies de garde* reflète le nouveau programme (période et nombre) si la période inclut aujourd'hui.
    (Il existe aussi **Importer un programme de garde** depuis un fichier Excel/CSV, avec un modèle téléchargeable.)
 
@@ -131,6 +133,58 @@ Une alerte complète a besoin de **deux comptes qui sont complices l'un de l'aut
 > affiche *« … a besoin d'aide »*. Rappel : 1 minute d'attente entre deux codes pour un même numéro.
 
 > **Important :** BRAVIDO ne remplace pas les secours. N'appelez pas réellement le 185 ou le 180 pendant les tests.
+
+### F. Nouvelles fonctions de sécurité
+
+Utilisez toujours les comptes A (`07 00 00 01 01`) et B (`07 00 00 01 02`), complices acceptés l'un de l'autre. Aucune de ces fonctions n'est « invisible » ni automatique en cachette : tout geste reste volontaire.
+
+| Fonction | Où | Comment tester | Résultat attendu |
+|---|---|---|---|
+| **Fiche médicale** | Espace Utilisateur > **Ma fiche médicale** | Remplissez (allergies, traitements…), activez l'interrupteur de partage, **Enregistrer** | Enregistrée. Si A déclenche une alerte, B voit la carte **Infos médicales** sur l'alerte reçue ; interrupteur coupé ou alerte terminée : la carte disparaît. Jamais dans les SMS ni le back-office |
+| **Message vocal** | Écran de suivi d'une alerte active (compte A) | **Enregistrer un message vocal** > **Commencer** (30 s max, voyant d'enregistrement visible) > **Envoyer** | B reçoit une notification « nouveau message vocal » et peut l'écouter sur l'alerte reçue. Supprimé après 30 jours |
+| **Je rentre chez moi** | Accueil > tuile **Je rentre chez moi** | Choisissez 15 min, cochez B, **Démarrer**. Puis **+ 15 min** (2 fois max) ou **Je suis arrivé(e)** | Compte à rebours. Sans confirmation à l'échéance : rappel, puis 2 min plus tard alerte automatique à B (motif Autre, « Trajet non confirmé »). *Test rapide : voir la ligne de commande ci-dessous* |
+| **Faux appel** | Accueil > tuile **Faux appel** | Réglez le nom (« Maman » par défaut), **Lancer le faux appel**, **Répondre** | Écran d'appel entrant, puis fausse conversation avec chronomètre. **Appui long de 2 s sur le chronomètre** = vraie alerte envoyée sans son ni vibration (à ne tester que si vous acceptez d'alerter B) |
+| **Mode discret** | Espace Utilisateur (ou écran Faux appel) > **Mode discret** | Activez, puis SOS : maintenez 3 s | Le compte à rebours devient un écran sombre de 3 s, sans vibration ; toucher l'écran annule |
+
+Surveillance des trajets (planifiée chaque minute par le serveur) : `php artisan bravido:verifier-trajets`.
+Ne déclenchez pas de vraie alerte SOS depuis le téléphone pour ces essais, sauf si vous le souhaitez.
+
+### G. Vague 2 : positions, espace responsable, fiche Premium
+
+Back-office : `http://localhost/bravido/backend/public/admin` (menu de gauche : **Géolocalisation**, **Déclarations de garde**, **Fiches**, **Fiches Premium** réservé à l'administrateur). Dans l'émulateur, réglez une position à Abidjan : `adb emu geo fix -4.0083 5.36`.
+
+| Fonction | Où | Comment tester | Résultat attendu |
+|---|---|---|---|
+| **Je suis sur place** (position confirmée) | App : Pharmacies > **Toutes les pharmacies** > ouvrir une fiche « Position approximative » | **Je suis sur place : confirmer la position** > **Confirmer** (phrase de consentement) | « Merci, position transmise ». Une seule fois par utilisateur et par établissement. Avec 3 utilisateurs distincts à moins de 60 m l'un de l'autre, le back-office > **Géolocalisation** > **Propositions des utilisateurs** affiche le point médian sur la carte : **Valider** (position précise) ou **Rejeter**. Jamais publié automatiquement. Propositions supprimées après décision ou 90 jours |
+| **Je gère cet établissement** | App : fiche > **Je gère cet établissement** | Indiquez votre fonction, joignez un justificatif (facultatif), **Envoyer la demande**. Back-office > **Fiches** > type *revendication* > **Examiner** > **Valider** | L'utilisateur devient responsable (rôle `resp_etab`, accès normal conservé). Espace Utilisateur > **Mon établissement** apparaît |
+| **Mon établissement** | App : Espace Utilisateur > **Mon établissement** | Ouvrez l'établissement : statistiques 30 jours (vues, appels, itinéraires), **Modifier ma fiche** (envoyée en modération), **Déclarer ma garde** (pharmacies : choisir la période, 14 jours max) | La modification et la garde restent « En attente » jusqu'à validation : Back-office > **Fiches** et **Déclarations de garde** > **Valider** (crée la garde, jamais de chevauchement) ou **Rejeter** avec un motif, visible par le responsable |
+| **Fiche Premium** | Back-office > **Fiches Premium** | Rechercher un établissement > **Activer Premium** (date de fin) > ajouter jusqu'à 5 photos, horaires détaillés, description longue > **Enregistrer** | App : liste de la ville dans sa catégorie, la fiche apparaît en tête avec **À la une** (jamais pour les urgences ni sur les écrans d'alerte, 2 fiches maximum, ordre des autres inchangé). Fiche ouverte : carrousel de photos, horaires par jour, « À propos ». Date dépassée : tout disparaît |
+| **Statistiques d'usage** | Back-office > **Fiches Premium** ; App > Mon établissement | Ouvrir une fiche, toucher **Appeler** / **Itinéraire** | Compteurs anonymes par jour (aucun identifiant d'utilisateur) |
+
+Purge quotidienne (propositions de position > 90 jours, positions d'alerte, etc.) : `php artisan bravido:purger`.
+
+### H. Vague 3 : recherche, carte, ouvert maintenant, partage, rappels, thème et langue
+
+Aucune installation supplémentaire : relancer l'application (`adb install -r`) suffit. Côté serveur : `php artisan queue:restart` puis relancer `backend\demarrer-worker.ps1` si le code a changé.
+
+| Fonction | Où | Comment tester | Résultat attendu |
+|---|---|---|---|
+| **Recherche globale** | App : accueil > barre arrondie sous le logo | Taper « dentiste », « phcie », « lunettes », « vétérinaire », « echographie » (accents et petites fautes tolérés) ; puces de catégorie ; rouvrir la recherche | Suggestions après 2 lettres ; résultats triés (nom exact, début de nom, contient, service ; fiches à position précise et proches d'abord), 40 maximum avec le décompte par catégorie ; recherches récentes effaçables ; états vide et erreur. API : `GET /api/v1/recherche?q=dentiste&ville_id=1`, `GET /api/v1/recherche/suggestions?q=pha` |
+| **Carte** | App : accueil > tuile **Carte** | Bouger/zoomer ; puces de catégorie ; bouton « ma position » ; toucher un marqueur | Seuls les établissements à **position précise** sont affichés (regroupés en grappes au dézoom) ; bandeau « N établissements sans position exacte ne sont pas sur la carte » > liste ; fiche dans un volet. API : `GET /api/v1/etablissements/carte?bbox=sw_lat,sw_lng,ne_lat,ne_lng&categorie=&limit=300`. Pour voir des marqueurs en test : mettre `position_precise=1` sur quelques établissements (back-office > Géolocalisation) |
+| **Ouvert maintenant** | App : pastille sur chaque carte d'établissement et sur la fiche | Ouvrir un établissement H24, un Premium avec horaires détaillés, un autre avec « Lun-Sam 8h-20h » | « Ouvert 24h/24 », « Ouvert · ferme à 20:00 », « Fermé · ouvre à 08:00 », « Ferme bientôt ». Horaires illisibles ou absents : **aucune pastille** (jamais de supposition). Fuseau Africa/Abidjan (UTC+0) |
+| **Partager** | App : fiche d'un établissement > icône partage | Partager vers Notes/WhatsApp | Nom, catégorie, adresse/repère, commune, téléphone(s), lien Google Maps (position précise : coordonnées ; approximative : recherche nom + commune), garde si de garde, « via BRAVIDO » |
+| **Mes rappels** | App : accueil > **Rappels** (ou Espace Utilisateur > **Mes rappels**) | **Nouveau rappel** : type médicament (heures) ou rendez-vous (date + heure, préavis), répétition (une fois, chaque jour, chaque semaine), titre/note ; activer/désactiver ; supprimer | Notifications locales (canal « Rappels »), uniquement sur le téléphone. Si « Alarmes et rappels » n'est pas accordé, bandeau « rappels approximatifs » (+ bouton **Autoriser les heures exactes**). Reprogrammés après redémarrage. Test rapide : rappel dans 2 minutes, `adb shell dumpsys alarm \| grep bravido` |
+| **Thème, taille du texte, langue** | App : accueil > roue crantée (en haut à gauche) ou Espace Utilisateur > **Réglages** | Thème Système/Clair/Sombre ; taille Petit/Normal/Grand/Très grand ; langue Auto/Français/English ; mode discret | Effet immédiat sans redémarrer ; réglages mémorisés. English : accueil, alerte, SOS, pharmacies, hôpitaux, fiche, recherche, carte, rappels, espace utilisateur, trajet, faux appel, fiche médicale. Les données serveur (noms, services, horaires) restent telles que publiées. Par défaut : langue du téléphone si français/anglais, sinon français |
+### Vague 4 (journal d'audit, supervision, hors ligne, avis, rapports d'erreurs, abonnement famille)
+
+| Fonction | Où | Comment tester | Résultat attendu |
+|---|---|---|---|
+| **Journal d'audit des alertes** | Back-office > **Alertes** > cliquer l'heure d'une alerte ; bouton CSV (admin) | Après une alerte de test : ouvrir le détail | Chronologie (déclenchée, push, SMS de secours, reçue, vue, réponse, clôture), délais 1er push / 1re ouverture, SMS utilisé ou non. Aucune position, aucun message, aucun nom ni numéro. Conservé 12 mois (`bravido:purger`) |
+| **Santé du système** | Back-office > Tableau de bord (admin) ; `GET /api/v1/sante` | Regarder la carte ; arrêter le worker 2 min | Base, file (alerte si > 120 s), travaux en échec, battement du planificateur (alerte si > 3 min), FCM, disque. Le battement exige la tâche `schedule:run` chaque minute (voir README) |
+| **Hors ligne** | App > Réglages > **Utiliser hors ligne** | **Télécharger Abidjan**, couper le Wi-Fi/données de l'émulateur (`adb shell svc wifi disable; adb shell svc data disable`), ouvrir Hôpitaux, Pharmacies de garde, recherche, une fiche | Bandeau « Hors ligne · données du jj/mm/aaaa », listes, filtres, recherche (mêmes synonymes), fiches et gardes servis localement. Mettre à jour (rien à retélécharger si inchangé) / supprimer. **Les fonds de carte ne sont pas enregistrés.** Remettre le réseau ensuite |
+| **Avis et notes** | App : fiche d'une pharmacie/clinique > **Donner mon avis** ; Espace Utilisateur > **Mes avis** ; Back-office > **Avis** | Noter 4 étoiles + commentaire ; dans le back-office, **Valider** ou **Rejeter** (motif) ; signaler un avis (menu ⋮) | L'avis reste « en vérification » jusqu'à validation ; moyenne et derniers avis publics après validation ; auteur « Prénom I. ». Texte avec numéro, insulte ou « Dr Nom + accusation » : surligné pour le modérateur. Aucun avis sur centres de secours / FGA |
+| **Rapports d'erreurs** | App > Réglages > **Confidentialité** | Activer l'interrupteur, relancer l'application | Désactivé par défaut ; choix conservé. Les rapports n'apparaissent dans Firebase qu'après activation de Crashlytics dans la console (projet bravido-6a8dc) |
+| **Abonnement famille (test)** | App : Espace Utilisateur > **Abonnement famille** ; Back-office > **Abonnements** (admin) | **Souscrire** > Paiement simulé > « Simuler un succès » | Abonnement actif 30 jours (prix provisoire 1 000 FCFA, « à confirmer »), membres invitables par numéro (4 profils au total). Orange Money / MTN MoMo / Wave : « bientôt disponible ». **Les alertes restent gratuites et identiques pour tous** |
 
 ---
 

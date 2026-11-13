@@ -46,6 +46,7 @@ class DashboardController extends Controller
                 ['valeur' => $alertesActives, 'libelle' => 'alertes actives', 'couleur' => $alertesActives ? 'rouge' : '', 'lien' => route('admin.alertes.index')],
                 ['valeur' => $tauxClic, 'libelle' => 'taux de clic publicité', 'lien' => auth()->user()->isAdmin() ? route('admin.publicites.index') : '#'],
             ],
+            'sante' => auth()->user()->isAdmin() ? app(\App\Services\SanteSysteme::class)->controles() : null,
             'villesSansGarde' => $villesSansGarde,
             'fiches' => Fiche::with('auteur')->where('statut', 'en_attente')->latest()->limit(5)->get(),
             'messages' => MessageSupport::with('user')->where('statut', 'nouveau')->latest()->limit(5)->get(),

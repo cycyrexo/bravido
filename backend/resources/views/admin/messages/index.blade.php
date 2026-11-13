@@ -30,7 +30,7 @@
                     <a href="{{ route('admin.messages.show', $m) }}">{{ \Illuminate\Support\Str::limit($m->texte, 100) }}</a>
                     @if($m->etablissement)<br><span class="muted">Concerne : {{ $m->etablissement->nom }}</span>@endif
                 </td>
-                <td>{{ $m->user->nomAffiche() }}</td>
+                <td>{{ $m->user->nomAffiche() }}@if(isset($prioritaires[$m->user_id])) <span class="pastille orange">Prioritaire</span>@endif</td>
                 <td>{{ $m->created_at->format('d/m/Y H:i') }}</td>
                 <td><span class="pastille {{ $m->statut === 'traite' ? 'vert' : ($m->statut === 'nouveau' ? 'rouge' : 'orange') }}">{{ $m->statut }}</span></td>
             </tr>

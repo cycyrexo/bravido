@@ -18,6 +18,8 @@ class UserResource extends JsonResource
             'ville' => $this->whenLoaded('ville', fn () => $this->ville?->nom),
             'groupe_sanguin' => $this->groupe_sanguin,
             'role' => $this->role,
+            // F18 : nombre d'établissements dont l'utilisateur est le responsable validé
+            'nb_etablissements' => \App\Models\Etablissement::where('responsable_id', $this->id)->count(),
         ];
     }
 }

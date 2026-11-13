@@ -33,6 +33,10 @@ class MessageController extends Controller
         return view('admin.messages.index', [
             'messages' => $query->paginate(25)->withQueryString(),
             'f' => $f,
+            // F19 : support prioritaire des abonnés (titulaires et membres ayant accepté)
+            'prioritaires' => \App\Models\Abonnement::enCours()->pluck('user_id')
+                ->merge(\App\Models\AbonnementMembre::where('statut', 'accepte')->whereHas('abonnement', fn ($q) => $q->enCours())->pluck('user_id'))
+                ->flip(),
         ]);
     }
 

@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Jobs\EnvoyerAlerteDestinataire;
 use App\Models\Alerte;
 use App\Models\AlerteDestinataire;
+use App\Models\AlerteEvenement;
 use App\Models\User;
 use App\Services\Sms\SmsSender;
 use Illuminate\Support\Facades\DB;
@@ -34,7 +35,9 @@ class AlerteService
             return $enCours;
         }
 
-        $complices = $user->complices()->where('statut', 'accepte')->get();
+        $complices = $user->complices()->where('statut', 'accepte')
+            ->when(! empty($data['complice_ids']), fn ($q) => $q->whereIn('id', $data['complice_ids']))
+            ->get();
         if ($complices->isEmpty()) {
             throw ValidationException::withMessages([
                 'complices' => 'Aucun complice n\'a encore accepté votre invitation. Appelez le 185 (SAMU) ou le 180 (pompiers).',
@@ -46,6 +49,7 @@ class AlerteService
 
             $alerte = new Alerte([
                 'motif' => $data['motif'],
+                'motif_detail' => $data['motif_detail'] ?? null,
                 'lat' => $data['lat'] ?? null,
                 'lng' => $data['lng'] ?? null,
                 'precision_m' => $data['precision_m'] ?? null,
@@ -78,6 +82,10 @@ class AlerteService
             return $alerte;
         });
 
+        AlerteEvenement::noter($alerte->id, 'declenchee', null, ($data['origine'] ?? null) === 'trajet' ? 'systeme' : 'app');
+        if (($data['origine'] ?? null) === 'trajet') {
+            AlerteEvenement::noter($alerte->id, 'trajet_auto', null, 'systeme');
+        }
         foreach ($alerte->destinataires as $destinataire) {
             EnvoyerAlerteDestinataire::dispatch($destinataire->id)->onQueue('alertes');
         }
@@ -102,6 +110,9 @@ class AlerteService
             ."Position : {$alerte->lienCarte()} . Si besoin appelez le 185 (SAMU) ou le 180 (pompiers).";
 
         $ok = $this->sms->envoyer($destinataire->telephone, $message);
+        if ($ok) {
+            AlerteEvenement::noter($alerte->id, 'sms_envoye', $destinataire, 'sms');
+        }
         if (! $ok) {
             // Libère le verrou pour permettre une nouvelle tentative
             AlerteDestinataire::whereKey($destinataire->id)->update(['sms_envoye_at' => null]);
@@ -110,13 +121,15 @@ class AlerteService
         return $ok;
     }
 
-    public function terminer(Alerte $alerte, string $statut): Alerte
+    /** $cause : 'expiree' quand la clôture vient de la durée écoulée (planificateur). */
+    public function terminer(Alerte $alerte, string $statut, ?string $cause = null): Alerte
     {
         if ($alerte->statut !== 'active') {
             return $alerte;
         }
 
         $alerte->forceFill(['statut' => $statut, 'closed_at' => now()])->save();
+        AlerteEvenement::noter($alerte->id, $cause ?? ($statut === 'annulee' ? 'annulee' : 'cloturee'), null, $cause === 'expiree' ? 'systeme' : 'app');
 
         $nom = $alerte->user->nomAffiche();
         $corps = $statut === 'annulee'

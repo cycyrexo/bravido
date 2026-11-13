@@ -13,13 +13,14 @@ class Etablissement extends Model
     // Champs qu'une fiche de souscription / correction peut modifier
     public const CHAMPS_EDITABLES = [
         'nom', 'commune_id', 'adresse', 'repere', 'description',
-        'lat', 'lng', 'tel1', 'tel2', 'horaires', 'h24',
+        'lat', 'lng', 'tel1', 'tel2', 'horaires', 'h24', 'description_longue',
     ];
 
     protected $fillable = [
         'categorie_id', 'nom', 'commune_id', 'adresse', 'repere', 'description',
         'lat', 'lng', 'tel1', 'tel2', 'horaires', 'h24', 'statut', 'premium', 'verifie_at',
         'position_precise', 'tel_autres', 'email', 'site_web', 'responsable_nom',
+        'premium_jusqu_au', 'horaires_detail', 'description_longue',
     ];
 
     protected function casts(): array
@@ -30,6 +31,8 @@ class Etablissement extends Model
             'position_precise' => 'boolean',
             'h24' => 'boolean',
             'premium' => 'boolean',
+            'premium_jusqu_au' => 'date',
+            'horaires_detail' => 'array',
             'verifie_at' => 'datetime',
         ];
     }
@@ -57,6 +60,30 @@ class Etablissement extends Model
     public function assurances(): BelongsToMany
     {
         return $this->belongsToMany(Assurance::class, 'etab_assurances')->orderBy('nom');
+    }
+
+    /** F13 : avis (tous statuts ; filtrer avec ->approuves() pour l'affichage public). */
+    public function avis(): HasMany
+    {
+        return $this->hasMany(Avis::class);
+    }
+
+    public function photos(): HasMany
+    {
+        return $this->hasMany(EtabPhoto::class)->orderBy('ordre')->orderBy('id');
+    }
+
+    /** Fiche Premium en cours de validité : case cochée et date d'expiration non dépassée (ou absente). */
+    public function estPremium(): bool
+    {
+        return (bool) $this->premium && ($this->premium_jusqu_au === null || ! $this->premium_jusqu_au->lt(today()));
+    }
+
+    public function scopePremiumActif(Builder $query): Builder
+    {
+        return $query->where('etablissements.premium', true)
+            ->where(fn (Builder $q) => $q->whereNull('etablissements.premium_jusqu_au')
+                ->orWhere('etablissements.premium_jusqu_au', '>=', today()->toDateString()));
     }
 
     public function gardes(): HasMany

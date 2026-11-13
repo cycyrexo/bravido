@@ -13,9 +13,7 @@ class DatabaseSeeder extends Seeder
             AdminSeeder::class,
         ]);
 
-        // Données fictives : uniquement en local, jamais en production
-        if (app()->environment('local')) {
-            $this->call(DemoSeeder::class);
-        }
+        // Données fictives « DÉMO » : plus chargées automatiquement (l'annuaire réel est importé).
+        // Au besoin : php artisan db:seed --class=DemoSeeder (jamais en production).
     }
 }

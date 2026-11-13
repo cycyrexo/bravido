@@ -1,6 +1,10 @@
+import 'dart:typed_data';
+
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart' show visibleForTesting;
 
 import '../config.dart';
+import 'hors_ligne.dart';
 import 'session.dart';
 
 class ApiException implements Exception {
@@ -33,8 +37,24 @@ class Api {
   static final Api instance = Api._();
   late final Dio _dio;
 
-  Future<dynamic> get(String chemin, {Map<String, dynamic>? query}) =>
-      _executer(() => _dio.get(chemin, queryParameters: _nettoyer(query)));
+  /// Accès au client HTTP pour les tests (remplacement de l'adaptateur par une API simulée).
+  @visibleForTesting
+  Dio get dio => _dio;
+
+  /// GET avec secours hors ligne (F20) : si le réseau est injoignable et que la ville a été téléchargée,
+  /// la réponse est calculée sur les données locales (même forme que l'API) et un bandeau « Hors ligne » s'affiche.
+  Future<dynamic> get(String chemin, {Map<String, dynamic>? query}) async {
+    try {
+      final r = await _executer(() => _dio.get(chemin, queryParameters: _nettoyer(query)));
+      HorsLigne.instance.enLigne();
+      return r;
+    } on ApiException catch (e) {
+      if (!e.horsLigne) rethrow;
+      final local = await HorsLigne.instance.repondre(chemin, _nettoyer(query));
+      if (local == null) rethrow;
+      return local;
+    }
+  }
 
   Future<dynamic> post(String chemin, [Object? data]) => _executer(() => _dio.post(chemin, data: data));
 
@@ -43,6 +63,12 @@ class Api {
   Future<dynamic> patch(String chemin, [Object? data]) => _executer(() => _dio.patch(chemin, data: data));
 
   Future<dynamic> delete(String chemin) => _executer(() => _dio.delete(chemin));
+
+  /// Téléchargement authentifié d'un fichier privé (ex. message vocal).
+  Future<Uint8List> telecharger(String chemin) async {
+    final donnees = await _executer(() => _dio.get<dynamic>(chemin, options: Options(responseType: ResponseType.bytes)));
+    return Uint8List.fromList((donnees as List).cast<int>());
+  }
 
   Map<String, dynamic>? _nettoyer(Map<String, dynamic>? q) {
     if (q == null) return null;

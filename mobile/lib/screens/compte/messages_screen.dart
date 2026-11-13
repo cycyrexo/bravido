@@ -97,9 +97,9 @@ class _MessagesScreenState extends State<MessagesScreen> {
                       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                         Row(children: [
                           Expanded(child: Text(_types[m['type']] ?? '${m['type']}', style: const TextStyle(fontWeight: FontWeight.w700))),
-                          Text(formatDate('${m['created_at']}'), style: const TextStyle(color: Couleurs.texteSecondaire, fontSize: 12.5)),
+                          Text(formatDate('${m['created_at']}'), style: TextStyle(color: Couleurs.texteSecondaire, fontSize: 12.5)),
                         ]),
-                        if (m['etablissement'] != null) Text('${m['etablissement']['nom']}', style: const TextStyle(color: Couleurs.texteSecondaire, fontSize: 13)),
+                        if (m['etablissement'] != null) Text('${m['etablissement']['nom']}', style: TextStyle(color: Couleurs.texteSecondaire, fontSize: 13)),
                         const SizedBox(height: 6),
                         Text('${m['texte']}', style: const TextStyle(height: 1.35)),
                         const SizedBox(height: 10),
@@ -109,7 +109,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(color: Couleurs.vertClair, borderRadius: BorderRadius.circular(12)),
                             child: Text.rich(TextSpan(children: [
-                              const TextSpan(text: 'Réponse BRAVIDO\n', style: TextStyle(color: Color(0xFF146A66), fontWeight: FontWeight.w800, fontSize: 12.5)),
+                              TextSpan(text: 'Réponse BRAVIDO\n', style: TextStyle(color: Couleurs.encreVerte, fontWeight: FontWeight.w800, fontSize: 12.5)),
                               TextSpan(text: '${m['reponse']}'),
                             ]), style: const TextStyle(height: 1.4)),
                           )

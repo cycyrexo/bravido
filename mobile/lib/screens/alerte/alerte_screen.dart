@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/langue.dart';
 
 import '../../app.dart';
 import '../../core/api.dart';
@@ -81,7 +82,7 @@ class _AlerteScreenState extends State<AlerteScreen> {
     final connecte = Session.instance.connecte;
 
     return Scaffold(
-      appBar: const BarreTitre('Alerte & Urgence'),
+      appBar: BarreTitre(tr('Alerte & Urgence', 'Alert & Emergency')),
       body: RefreshIndicator(
         onRefresh: _charger,
         child: ListView(
@@ -91,7 +92,7 @@ class _AlerteScreenState extends State<AlerteScreen> {
               Card(
                 color: Couleurs.rougeClair,
                 child: ListTile(
-                  leading: const Icon(Icons.warning_amber_rounded, color: Couleurs.rouge),
+                  leading: Icon(Icons.warning_amber_rounded, color: Couleurs.encreRouge),
                   title: Text('${a['personne']?['nom']} a besoin d\'aide', style: const TextStyle(fontWeight: FontWeight.w700)),
                   subtitle: Text('${a['motif_libelle']} · depuis ${formatHeure('${a['started_at']}')}'),
                   trailing: const Icon(Icons.chevron_right),
@@ -102,18 +103,18 @@ class _AlerteScreenState extends State<AlerteScreen> {
               Card(
                 color: Couleurs.rougeClair,
                 child: ListTile(
-                  leading: const Icon(Icons.sensors, color: Couleurs.rouge),
-                  title: const Text('Votre alerte est en cours', style: TextStyle(fontWeight: FontWeight.w700)),
-                  subtitle: const Text('Voir le suivi de vos complices'),
+                  leading: Icon(Icons.sensors, color: Couleurs.encreRouge),
+                  title: Text(tr('Votre alerte est en cours', 'Your alert is in progress'), style: const TextStyle(fontWeight: FontWeight.w700)),
+                  subtitle: Text(tr('Voir le suivi de vos complices', 'View your accomplices\' status')),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => _ouvrir(AlerteActiveScreen(alerte: _alerteEnCours!)),
                 ),
               ),
             BoutonSos(
-              texte: connecte && _nbComplices > 0 ? (_nbComplices > 1 ? 'SOS · Alerter mes $_nbComplices complices' : 'SOS · Alerter mon complice') : 'SOS · Alerter mes complices',
+              texte: connecte && _nbComplices > 0 ? (_nbComplices > 1 ? tr('SOS · Alerter mes $_nbComplices complices', 'SOS · Alert my $_nbComplices accomplices') : tr('SOS · Alerter mon complice', 'SOS · Alert my accomplice')) : tr('SOS · Alerter mes complices', 'SOS · Alert my accomplices'),
               onPressed: () => _ouvrir(const SosScreen()),
             ),
-            const TitreSection('Numéros d\'urgence'),
+            TitreSection(tr('Numéros d\'urgence', 'Emergency numbers')),
             for (final n in _numeros())
               Card(
                 child: InkWell(
@@ -125,7 +126,7 @@ class _AlerteScreenState extends State<AlerteScreen> {
                         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                           Text(n.libelle, style: const TextStyle(fontWeight: FontWeight.w700)),
                           Text(n.numeros.length > 1 ? n.numeros.join(' · ') : (n.description ?? ''),
-                              style: const TextStyle(color: Couleurs.texteSecondaire, fontSize: 13)),
+                              style: TextStyle(color: Couleurs.texteSecondaire, fontSize: 13)),
                         ]),
                       ),
                       Container(
@@ -145,31 +146,33 @@ class _AlerteScreenState extends State<AlerteScreen> {
             const TitreSection('Services'),
             LigneMenu(
               badge: Text('$_nbComplices/$_max'),
-              titre: 'Mes complices BRAVIDO',
-              sousTitre: 'Ils reçoivent votre alerte et votre position',
+              titre: tr('Mes complices BRAVIDO', 'My BRAVIDO accomplices'),
+              sousTitre: tr('Ils reçoivent votre alerte et votre position', 'They receive your alert and location'),
               onTap: () => _ouvrir(connecte ? const ComplicesScreen() : const CompteScreen()),
             ),
             LigneMenu(
               badge: const Text('180', style: TextStyle(color: Color(0xFF2E9E3E))),
               couleurBadge: const Color(0xFFDDF3E0),
-              titre: 'Centres de secours',
-              sousTitre: 'GSPM et ONPC les plus proches',
-              onTap: () => _ouvrir(const EtablissementsScreen(
-                titre: 'Centres de secours',
+              titre: tr('Centres de secours', 'Rescue centres'),
+              sousTitre: tr('GSPM et ONPC les plus proches', 'Closest GSPM and ONPC units'),
+              onTap: () => _ouvrir(EtablissementsScreen(
+                titre: tr('Centres de secours', 'Rescue centres'),
                 categories: ['centre_secours'],
-                introduction: 'Triés du plus proche au plus loin de votre position.',
+                introduction: tr('Triés du plus proche au plus loin de votre position.', 'Sorted from closest to farthest from your location.'),
               )),
             ),
             LigneMenu(
               badge: const Text('FGA', style: TextStyle(color: Color(0xFF9A7400))),
               couleurBadge: const Color(0xFFFFF1C2),
-              titre: 'Accident de la route : FGA',
-              sousTitre: 'Prise en charge gratuite des accidentés',
-              onTap: () => _ouvrir(const EtablissementsScreen(
-                titre: 'Bureaux FGA',
+              titre: tr('Accident de la route : FGA', 'Road accident: FGA'),
+              sousTitre: tr('Prise en charge gratuite des accidentés', 'Free care for accident victims'),
+              onTap: () => _ouvrir(EtablissementsScreen(
+                titre: tr('Bureaux FGA', 'FGA offices'),
                 categories: ['bureau_fga'],
-                introduction: 'Le Fonds de Garantie Automobile prend en charge les frais médicaux des victimes '
+                introduction: tr('Le Fonds de Garantie Automobile prend en charge les frais médicaux des victimes '
                     'd\'accidents de la route dans les hôpitaux partenaires. En cas d\'accident, appelez d\'abord le 185 ou le 180.',
+                    'The Automobile Guarantee Fund covers the medical costs of road accident victims '
+                    'in partner hospitals. In case of an accident, call 185 or 180 first.'),
               )),
             ),
           ],

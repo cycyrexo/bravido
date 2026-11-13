@@ -63,7 +63,7 @@ class _FichesScreenState extends State<FichesScreen> {
                   child: ListTile(
                     title: Text('${f['nom'] ?? 'Établissement'}'),
                     subtitle: Text([
-                      f['type'] == 'souscription' ? 'Inscription' : 'Correction',
+                      {'souscription': 'Inscription', 'revendication': 'Demande de gestion'}['${f['type']}'] ?? 'Correction',
                       'envoyée le ${formatDate('${f['created_at']}')}',
                       if (f['motif_rejet'] != null) 'Motif : ${f['motif_rejet']}',
                     ].join(' · ')),

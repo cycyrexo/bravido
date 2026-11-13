@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\AlerteResource;
 use App\Models\Alerte;
 use App\Models\AlerteDestinataire;
+use App\Models\AlerteEvenement;
 use App\Services\AlerteService;
 use App\Services\Notifier;
 use Illuminate\Http\JsonResponse;
@@ -29,7 +30,7 @@ class AlerteController extends Controller
         ]);
 
         $alerte = $this->service->declencher($request->user(), $data);
-        $alerte->load(['destinataires', 'dernierePosition']);
+        $alerte->load(['destinataires', 'dernierePosition', 'audios']);
 
         return (new AlerteResource($alerte))->response()->setStatusCode(201);
     }
@@ -38,7 +39,8 @@ class AlerteController extends Controller
     public function index(Request $request): AnonymousResourceCollection
     {
         return AlerteResource::collection(
-            $request->user()->alertes()->latest('started_at')->limit(20)->get()
+            // Avantage non critique (F19) : historique étendu pour les abonnés ; lecture seule, sans effet sur l'envoi
+            $request->user()->alertes()->latest('started_at')->limit($request->user()->abonnementEnCours() ? 100 : 20)->get()
         );
     }
 
@@ -48,10 +50,10 @@ class AlerteController extends Controller
         $userId = $request->user()->id;
 
         if ($alerte->user_id === $userId) {
-            $alerte->load(['destinataires', 'dernierePosition']);
+            $alerte->load(['destinataires', 'dernierePosition', 'audios']);
         } else {
             abort_unless($alerte->destinataires()->where('destinataire_user_id', $userId)->exists(), 404);
-            $alerte->load('user');
+            $alerte->load(['user', 'audios']);
             // La position n'est visible des complices que pendant l'alerte
             if ($alerte->estActive()) {
                 $alerte->load('dernierePosition');
@@ -74,7 +76,7 @@ class AlerteController extends Controller
 
         if (! $alerte->estActive()) {
             if ($alerte->statut === 'active') {
-                $this->service->terminer($alerte, 'close');
+                $this->service->terminer($alerte, 'close', 'expiree');
             }
 
             return response()->json(['message' => 'Cette alerte est terminée.', 'statut' => 'close'], 409);
@@ -106,7 +108,7 @@ class AlerteController extends Controller
             ->where('statut', 'active')
             ->where('expires_at', '>', now())
             ->whereHas('destinataires', fn ($q) => $q->where('destinataire_user_id', $request->user()->id))
-            ->with(['user', 'dernierePosition'])
+            ->with(['user', 'dernierePosition', 'audios'])
             ->latest('started_at')
             ->get();
 
@@ -119,6 +121,7 @@ class AlerteController extends Controller
         $destinataire = $this->destinataire($request, $alerte);
         if (! $destinataire->recu_at) {
             $destinataire->forceFill(['recu_at' => now()])->save();
+            AlerteEvenement::noter($alerte->id, 'recue', $destinataire, 'app');
         }
 
         return response()->json(['etat' => $destinataire->etat()]);
@@ -128,6 +131,7 @@ class AlerteController extends Controller
     public function vu(Request $request, Alerte $alerte): JsonResponse
     {
         $destinataire = $this->destinataire($request, $alerte);
+        $this->noterLecture($alerte, $destinataire);
         $destinataire->forceFill([
             'recu_at' => $destinataire->recu_at ?? now(),
             'vu_at' => $destinataire->vu_at ?? now(),
@@ -142,6 +146,8 @@ class AlerteController extends Controller
         $data = $request->validate(['reponse' => ['required', Rule::in(['j_arrive', 'appelle_secours'])]]);
         $destinataire = $this->destinataire($request, $alerte);
 
+        $this->noterLecture($alerte, $destinataire);
+        AlerteEvenement::noter($alerte->id, 'reponse', $destinataire, 'app');
         $destinataire->forceFill([
             'recu_at' => $destinataire->recu_at ?? now(),
             'vu_at' => $destinataire->vu_at ?? now(),
@@ -156,6 +162,17 @@ class AlerteController extends Controller
         ]);
 
         return response()->json(['etat' => $destinataire->etat()]);
+    }
+
+    /** Journal d'audit : « reçue » et « vue » ne sont notés qu'à la première fois. */
+    private function noterLecture(Alerte $alerte, AlerteDestinataire $destinataire): void
+    {
+        if (! $destinataire->recu_at) {
+            AlerteEvenement::noter($alerte->id, 'recue', $destinataire, 'app');
+        }
+        if (! $destinataire->vu_at) {
+            AlerteEvenement::noter($alerte->id, 'vue', $destinataire, 'app');
+        }
     }
 
     private function destinataire(Request $request, Alerte $alerte): AlerteDestinataire

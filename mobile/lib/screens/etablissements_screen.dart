@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/langue.dart';
 
 import '../app.dart';
 import '../core/session.dart';
@@ -77,12 +78,12 @@ class _EtablissementsScreenState extends State<EtablissementsScreen> {
               const SizedBox(height: 8),
             ],
             Info(widget.introduction ??
-                'Ville : ${session.nomVille}${_total == null ? '' : ' · $_total établissement${_total! > 1 ? 's' : ''}'}'),
+                tr('Ville : ${session.nomVille}${_total == null ? '' : ' · $_total établissement${_total! > 1 ? 's' : ''}'}', 'City: ${session.nomVille}${_total == null ? '' : ' · $_total facilit${_total! > 1 ? 'ies' : 'y'}'}')),
             if (widget.avecFiltres) ...[
               TextField(
                 textInputAction: TextInputAction.search,
-                decoration: const InputDecoration(
-                  hintText: 'Rechercher un établissement',
+                decoration: InputDecoration(
+                  hintText: tr('Rechercher un établissement', 'Search a facility'),
                   prefixIcon: Icon(Icons.search_rounded, size: 20, color: Couleurs.texteSecondaire),
                 ),
                 onSubmitted: (v) => setState(() => _recherche = v.trim()),
@@ -94,7 +95,7 @@ class _EtablissementsScreenState extends State<EtablissementsScreen> {
                     initialValue: _service,
                     isExpanded: true,
                     items: [
-                      const DropdownMenuItem(value: null, child: Text('Services', maxLines: 1, overflow: TextOverflow.ellipsis)),
+                      DropdownMenuItem(value: null, child: Text(tr('Services', 'Services'), maxLines: 1, overflow: TextOverflow.ellipsis)),
                       for (final s in session.services) DropdownMenuItem(value: s, child: Text(s, overflow: TextOverflow.ellipsis)),
                     ],
                     onChanged: (v) => setState(() => _service = v),
@@ -106,7 +107,7 @@ class _EtablissementsScreenState extends State<EtablissementsScreen> {
                     initialValue: _assuranceId,
                     isExpanded: true,
                     items: [
-                      const DropdownMenuItem(value: null, child: Text('Assurances', maxLines: 1, overflow: TextOverflow.ellipsis)),
+                      DropdownMenuItem(value: null, child: Text(tr('Assurances', 'Insurers'), maxLines: 1, overflow: TextOverflow.ellipsis)),
                       for (final a in session.assurances)
                         DropdownMenuItem(value: a['id'] as int, child: Text('${a['nom']}', overflow: TextOverflow.ellipsis)),
                     ],

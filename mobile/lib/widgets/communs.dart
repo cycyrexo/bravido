@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import '../core/langue.dart';
 
 import '../app.dart';
+import '../core/ouverture.dart';
 import '../core/outils.dart';
 import '../screens/alerte/sos_screen.dart';
 import '../screens/etablissement_detail_screen.dart';
@@ -15,7 +17,7 @@ class SosAction extends StatelessWidget {
       padding: const EdgeInsets.only(right: 12),
       child: Semantics(
         button: true,
-        label: 'SOS, alerter mes complices',
+        label: tr('SOS, alerter mes complices', 'SOS, alert my accomplices'),
         child: InkWell(
           customBorder: const StadiumBorder(),
           onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SosScreen())),
@@ -72,7 +74,7 @@ class BarreTitre extends StatelessWidget implements PreferredSizeWidget {
           ? Padding(
               padding: const EdgeInsets.all(10),
               child: Material(
-                color: couleur == null ? Colors.white : Colors.white24,
+                color: couleur == null ? Couleurs.surface : Colors.white24,
                 elevation: couleur == null ? 2 : 0,
                 shadowColor: const Color(0x330B2A33),
                 shape: const CircleBorder(),
@@ -84,7 +86,7 @@ class BarreTitre extends StatelessWidget implements PreferredSizeWidget {
               ),
             )
           : null,
-      title: Text(titre),
+      title: Text(trd(titre)),
       actions: actions,
       bottom: bas,
     );
@@ -93,24 +95,32 @@ class BarreTitre extends StatelessWidget implements PreferredSizeWidget {
 
 /// Petit badge arrondi : « De garde », « 24h/24 », « 4 assurances », statuts...
 class Pastille extends StatelessWidget {
-  const Pastille(this.texte, {super.key, this.couleur = Couleurs.texteSecondaire, this.fond});
+  const Pastille(this.texte, {super.key, this.couleur, this.fond}) : _ton = null;
 
   final String texte;
-  final Color couleur;
+  final Color? couleur;
   final Color? fond;
+  final String? _ton;
 
-  // Encres foncées : contraste ≥ 4,5:1 sur les fonds pastel
-  const Pastille.verte(this.texte, {super.key}) : couleur = const Color(0xFF146A66), fond = Couleurs.vertClair;
-  const Pastille.orange(this.texte, {super.key}) : couleur = const Color(0xFFA84300), fond = Couleurs.orangeClair;
-  const Pastille.rouge(this.texte, {super.key}) : couleur = Couleurs.rougeFonce, fond = Couleurs.rougeClair;
-  const Pastille.grise(this.texte, {super.key}) : couleur = const Color(0xFF55646C), fond = Couleurs.gris;
+  // Teintes résolues à la construction (thème clair/sombre) ; encres : contraste ≥ 4,5:1 sur les fonds pastel
+  const Pastille.verte(this.texte, {super.key}) : couleur = null, fond = null, _ton = 'vert';
+  const Pastille.orange(this.texte, {super.key}) : couleur = null, fond = null, _ton = 'orange';
+  const Pastille.rouge(this.texte, {super.key}) : couleur = null, fond = null, _ton = 'rouge';
+  const Pastille.grise(this.texte, {super.key}) : couleur = null, fond = null, _ton = 'grise';
 
   @override
   Widget build(BuildContext context) {
+    final (encre, fondPastel) = switch (_ton) {
+      'vert' => (Couleurs.encreVerte, Couleurs.vertClair),
+      'orange' => (Couleurs.encreOrange, Couleurs.orangeClair),
+      'rouge' => (Couleurs.encreRouge, Couleurs.rougeClair),
+      'grise' => (Couleurs.encreGrise, Couleurs.gris),
+      _ => (couleur ?? Couleurs.texteSecondaire, fond),
+    };
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(color: fond ?? couleur.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(99)),
-      child: Text(texte, style: TextStyle(color: couleur, fontSize: 11, fontWeight: FontWeight.w700)),
+      decoration: BoxDecoration(color: fondPastel ?? encre.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(99)),
+      child: Text(texte, style: TextStyle(color: encre, fontSize: 11, fontWeight: FontWeight.w700)),
     );
   }
 }
@@ -124,16 +134,16 @@ class Info extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const style = TextStyle(color: Color(0xFF4A5A62), fontSize: 13, height: 1.35);
+    final style = TextStyle(color: Couleurs.texteSecondaire, fontSize: 13, height: 1.35);
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
       decoration: BoxDecoration(color: Couleurs.gris, borderRadius: BorderRadius.circular(14)),
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const Padding(
-          padding: EdgeInsets.only(top: 1),
-          child: Icon(Icons.info_outline_rounded, size: 16, color: Couleurs.vert),
+        Padding(
+          padding: const EdgeInsets.only(top: 1),
+          child: Icon(Icons.info_outline_rounded, size: 16, color: Couleurs.accent),
         ),
         const SizedBox(width: 8),
         Expanded(child: enrichi != null ? Text.rich(enrichi!, style: style) : Text(texte, style: style)),
@@ -159,7 +169,7 @@ class Puces<T> extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(right: 8),
             child: ChoiceChip(
-              label: Text(e.value),
+              label: Text(trd(e.value)),
               selected: e.key == valeur,
               labelStyle: TextStyle(color: e.key == valeur ? Colors.white : Couleurs.texte, fontWeight: FontWeight.w700, fontSize: 13),
               onSelected: (_) => onChanged(e.key),
@@ -181,19 +191,19 @@ class TitreSection extends StatelessWidget {
   Widget build(BuildContext context) => Padding(
         padding: const EdgeInsets.fromLTRB(2, 18, 0, 8),
         child: Text(texte.toUpperCase(),
-            style: const TextStyle(color: Couleurs.texteSecondaire, fontSize: 12, fontWeight: FontWeight.w800, letterSpacing: 0.6)),
+            style: TextStyle(color: Couleurs.texteSecondaire, fontSize: 12, fontWeight: FontWeight.w800, letterSpacing: 0.6)),
       );
 }
 
 /// Ligne « icône carrée colorée + titre + sous-titre » (services, espace utilisateur).
 class LigneMenu extends StatelessWidget {
-  const LigneMenu({super.key, required this.badge, required this.titre, this.sousTitre, this.onTap, this.couleurBadge = Couleurs.gris});
+  const LigneMenu({super.key, required this.badge, required this.titre, this.sousTitre, this.onTap, this.couleurBadge});
 
   final Widget badge;
   final String titre;
   final String? sousTitre;
   final VoidCallback? onTap;
-  final Color couleurBadge;
+  final Color? couleurBadge;
 
   @override
   Widget build(BuildContext context) {
@@ -208,7 +218,7 @@ class LigneMenu extends StatelessWidget {
               width: 44,
               height: 44,
               alignment: Alignment.center,
-              decoration: BoxDecoration(color: couleurBadge, borderRadius: BorderRadius.circular(14)),
+              decoration: BoxDecoration(color: Couleurs.sombre ? Couleurs.gris : (couleurBadge ?? Couleurs.gris), borderRadius: BorderRadius.circular(14)),
               child: DefaultTextStyle.merge(style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13), child: badge),
             ),
             const SizedBox(width: 14),
@@ -218,11 +228,11 @@ class LigneMenu extends StatelessWidget {
                 if (sousTitre != null)
                   Padding(
                     padding: const EdgeInsets.only(top: 2),
-                    child: Text(sousTitre!, style: const TextStyle(color: Couleurs.texteSecondaire, fontSize: 13)),
+                    child: Text(sousTitre!, style: TextStyle(color: Couleurs.texteSecondaire, fontSize: 13)),
                   ),
               ]),
             ),
-            if (onTap != null) const Icon(Icons.chevron_right, color: Color(0xFFB4BEC3)),
+            if (onTap != null) Icon(Icons.chevron_right, color: Couleurs.texteSecondaire),
           ]),
         ),
       ),
@@ -287,16 +297,13 @@ class BoutonSos extends StatelessWidget {
   }
 }
 
-/// Pictogramme rond coloré selon la catégorie d'établissement.
-class IconeCategorie extends StatelessWidget {
-  const IconeCategorie(this.code, {super.key, this.taille = 44});
+/// Pictogramme, couleur et fond propres à chaque catégorie (liste, carte, filtres).
+(IconData, Color, Color) styleCategorie(String? code) {
+  final (i, c, f) = _styleCat(code);
+  return Couleurs.sombre ? (i, Color.lerp(c, Colors.white, 0.35)!, c.withValues(alpha: 0.22)) : (i, c, f);
+}
 
-  final String? code;
-  final double taille;
-
-  @override
-  Widget build(BuildContext context) {
-    final (icone, couleur, fond) = switch (code) {
+(IconData, Color, Color) _styleCat(String? code) => switch (code) {
       'pharmacie' => (Icons.local_pharmacy_rounded, const Color(0xFF2E9E3E), const Color(0xFFE2F5E5)),
       'hopital_public' => (Icons.local_hospital_rounded, Couleurs.bleu, Couleurs.bleuClair),
       'hopital_prive' => (Icons.medical_services_rounded, Couleurs.vert, Couleurs.vertClair),
@@ -310,6 +317,17 @@ class IconeCategorie extends StatelessWidget {
       'bureau_fga' => (Icons.car_crash_rounded, const Color(0xFFB98900), const Color(0xFFFFF4CC)),
       _ => (Icons.place_rounded, Couleurs.texteSecondaire, Couleurs.gris),
     };
+
+/// Pictogramme rond coloré selon la catégorie d'établissement.
+class IconeCategorie extends StatelessWidget {
+  const IconeCategorie(this.code, {super.key, this.taille = 44});
+
+  final String? code;
+  final double taille;
+
+  @override
+  Widget build(BuildContext context) {
+    final (icone, couleur, fond) = styleCategorie(code);
     return Container(
       width: taille,
       height: taille,
@@ -342,14 +360,14 @@ class MessageVide extends StatelessWidget {
           Container(
             width: 76,
             height: 76,
-            decoration: const BoxDecoration(color: Couleurs.vertClair, shape: BoxShape.circle),
-            child: Icon(icone, size: 34, color: Couleurs.vert),
+            decoration: BoxDecoration(color: Couleurs.vertClair, shape: BoxShape.circle),
+            child: Icon(icone, size: 34, color: Couleurs.accent),
           ),
           const SizedBox(height: 14),
-          Text(texte, textAlign: TextAlign.center, style: const TextStyle(color: Couleurs.texteSecondaire, fontSize: 14.5, height: 1.35)),
+          Text(texte, textAlign: TextAlign.center, style: TextStyle(color: Couleurs.texteSecondaire, fontSize: 14.5, height: 1.35)),
           if (onReessayer != null) ...[
             const SizedBox(height: 14),
-            OutlinedButton.icon(onPressed: onReessayer, icon: const Icon(Icons.refresh_rounded, size: 18), label: const Text('Réessayer')),
+            OutlinedButton.icon(onPressed: onReessayer, icon: const Icon(Icons.refresh_rounded, size: 18), label: Text(tr('Réessayer', 'Try again'))),
           ],
         ]),
       ),
@@ -384,12 +402,12 @@ class Bandeau extends StatelessWidget {
 
 /// Pastille ronde avec l'initiale d'une personne (profil, complices, alertes).
 class Avatar extends StatelessWidget {
-  const Avatar(this.nom, {super.key, this.taille = 44, this.couleur = Couleurs.vert, this.fond = Couleurs.vertClair});
+  const Avatar(this.nom, {super.key, this.taille = 44, this.couleur = Couleurs.vert, this.fond});
 
   final String? nom;
   final double taille;
   final Color couleur;
-  final Color fond;
+  final Color? fond;
 
   @override
   Widget build(BuildContext context) {
@@ -401,7 +419,7 @@ class Avatar extends StatelessWidget {
         width: taille,
         height: taille,
         alignment: Alignment.center,
-        decoration: BoxDecoration(color: fond, shape: BoxShape.circle),
+        decoration: BoxDecoration(color: fond ?? Couleurs.vertClair, shape: BoxShape.circle),
         child: initiale == null
             ? Icon(Icons.person_rounded, color: couleur, size: taille * 0.55)
             : Text(initiale, style: TextStyle(color: couleur, fontWeight: FontWeight.w800, fontSize: taille * 0.42)),
@@ -444,13 +462,15 @@ class EtablissementTile extends StatelessWidget {
                 if (sousTitre.isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.only(top: 2),
-                    child: Text(sousTitre, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Couleurs.texteSecondaire, fontSize: 13)),
+                    child: Text(sousTitre, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: Couleurs.texteSecondaire, fontSize: 13)),
                   ),
                 const SizedBox(height: 7),
                 Wrap(spacing: 5, runSpacing: 4, children: [
-                  if (e['garde'] != null || e['de_garde'] == true) const Pastille.verte('De garde'),
-                  if (e['h24'] == true) const Pastille.orange('24h/24'),
-                  if (nbAssurances != null && nbAssurances > 0) Pastille.grise('$nbAssurances assurance${nbAssurances > 1 ? 's' : ''}'),
+                  // Créneau sponsorisé (fiche Premium), toujours clairement étiqueté
+                  if (e['a_la_une'] == true) Pastille.orange(tr('À la une', 'Featured')),
+                  if (ouvertureEtablissement(e) case final o?) PastilleOuverture(o),
+                  if (e['garde'] != null || e['de_garde'] == true) Pastille.verte(tr('De garde', 'On duty')),
+                  if (nbAssurances != null && nbAssurances > 0) Pastille.grise(tr('$nbAssurances assurance${nbAssurances > 1 ? 's' : ''}', '$nbAssurances insurer${nbAssurances > 1 ? 's' : ''}')),
                 ]),
               ]),
             ),
@@ -461,7 +481,7 @@ class EtablissementTile extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                 decoration: BoxDecoration(color: Couleurs.vertClair, borderRadius: BorderRadius.circular(99)),
                 child: Text(formatDistance(e['distance_m'] as num),
-                    style: const TextStyle(color: Color(0xFF146A66), fontWeight: FontWeight.w800, fontSize: 12.5)),
+                    style: TextStyle(color: Couleurs.encreVerte, fontWeight: FontWeight.w800, fontSize: 12.5)),
               ),
           ]),
         ),
@@ -472,4 +492,26 @@ class EtablissementTile extends StatelessWidget {
 
 void afficherMessage(BuildContext context, String texte) {
   ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(texte)));
+}
+
+/// F12 : « Ouvert · ferme à 20:00 », « Fermé · ouvre à 08:00 »… N'affiche rien si les horaires ne sont pas lisibles.
+class PastilleOuverture extends StatelessWidget {
+  const PastilleOuverture(this.ouverture, {super.key});
+
+  final Ouverture ouverture;
+
+  static Widget depuis(Map<String, dynamic> e) {
+    final o = ouvertureEtablissement(e);
+    return o == null ? const SizedBox.shrink() : PastilleOuverture(o);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final texte = ouverture.libelle;
+    return switch (ouverture.etat) {
+      EtatOuverture.ouvert24h || EtatOuverture.ouvert => Pastille.verte(texte),
+      EtatOuverture.fermeBientot => Pastille.orange(texte),
+      EtatOuverture.ferme => Pastille.grise(texte),
+    };
+  }
 }

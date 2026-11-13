@@ -16,6 +16,18 @@ return [
         'delai_sms_secours_s' => (int) env('ALERTE_DELAI_SMS_S', 20),
         // Exigence sécurité : positions effacées après 30 jours
         'retention_jours' => 30,
+        'retention_audit_mois' => 12,
+    ],
+
+    // « Je rentre chez moi » : trajet surveillé
+    'trajet' => [
+        'duree_min_minutes' => 15,
+        'duree_max_minutes' => 180,
+        // Délai de grâce après l'échéance avant le déclenchement automatique de l'alerte
+        'grace_minutes' => 2,
+        'prolongation_minutes' => 15,
+        'prolongations_max' => 2,
+        'intervalle_position_s' => 60,
     ],
 
     'otp' => [

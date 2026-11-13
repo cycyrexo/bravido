@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Etablissement;
 use App\Models\Fiche;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -14,6 +15,7 @@ class FicheController extends Controller
     public const CHAMPS = [
         'nom', 'categorie_code', 'commune_id', 'adresse', 'repere', 'description',
         'lat', 'lng', 'tel1', 'tel2', 'horaires', 'h24', 'services', 'assurances',
+        'role', 'telephone', 'description_longue',
     ];
 
     public function index(Request $request): JsonResponse
@@ -29,9 +31,11 @@ class FicheController extends Controller
     public function store(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'type' => ['required', 'in:souscription,correction'],
-            'etablissement_id' => ['nullable', 'required_if:type,correction', 'integer', 'exists:etablissements,id'],
+            'type' => ['required', 'in:souscription,correction,revendication'],
+            'etablissement_id' => ['nullable', 'required_if:type,correction,revendication', 'integer', 'exists:etablissements,id'],
             'donnees' => ['required', 'array'],
+            'donnees.role' => ['nullable', 'required_if:type,revendication', 'string', 'max:100'],
+            'donnees.telephone' => ['nullable', 'required_if:type,revendication', 'string', 'max:20'],
             'donnees.nom' => ['nullable', 'required_if:type,souscription', 'string', 'max:200'],
             'donnees.categorie_code' => ['nullable', 'required_if:type,souscription', 'string', 'exists:categories,code'],
             'donnees.commune_id' => ['nullable', 'required_if:type,souscription', 'integer', 'exists:communes,id'],
@@ -52,6 +56,19 @@ class FicheController extends Controller
             'pieces.*' => ['file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
         ]);
 
+        if ($data['type'] === 'revendication') {
+            $etab = Etablissement::findOrFail($data['etablissement_id']);
+            abort_unless($etab->statut === 'publie', 404);
+            if ($etab->responsable_id === $request->user()->id) {
+                return response()->json(['message' => 'Vous gérez déjà cet établissement.'], 422);
+            }
+            $enAttente = Fiche::where('type', 'revendication')->where('etablissement_id', $etab->id)
+                ->where('soumis_par', $request->user()->id)->where('statut', 'en_attente')->exists();
+            if ($enAttente) {
+                return response()->json(['message' => 'Votre demande est déjà en cours de vérification.'], 409);
+            }
+        }
+
         $donnees = array_filter(
             Arr::only($data['donnees'], self::CHAMPS),
             fn ($v) => $v !== null && $v !== ''
@@ -71,7 +88,7 @@ class FicheController extends Controller
 
         $fiche = new Fiche([
             'type' => $data['type'],
-            'etablissement_id' => $data['type'] === 'correction' ? $data['etablissement_id'] : null,
+            'etablissement_id' => $data['type'] !== 'souscription' ? $data['etablissement_id'] : null,
             'donnees' => $donnees,
             'pieces' => $pieces ?: null,
         ]);

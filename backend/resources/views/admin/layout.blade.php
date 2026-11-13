@@ -19,7 +19,12 @@
             $compteurs = [
                 'fiches' => \App\Models\Fiche::where('statut', 'en_attente')->count(),
                 'messages' => \App\Models\MessageSupport::where('statut', '!=', 'traite')->count(),
-                'alertes' => \App\Models\Alerte::where('statut', 'active')->where('expires_at', '>', now())->count(),
+                'geoloc' => \App\Models\Etablissement::where('position_precise', false)->count(),
+                'propositions' => \App\Models\Etablissement::whereNotNull('position_a_valider_at')->count(),
+                'declarations' => \App\Models\GardeDeclaration::where('statut', 'en_attente')->count(),
+                'avis' => \App\Models\Avis::where('statut', 'en_attente')->count()
+                    + \App\Models\Avis::where('statut', 'approuve')->where('reponse_statut', 'en_attente')->count(),
+                'alertes' =>\App\Models\Alerte::where('statut', 'active')->where('expires_at', '>', now())->count(),
             ];
             $lien = fn (string $route, string $prefixe, string $libelle, ?int $compteur = null) =>
                 '<a href="'.e(route($route)).'" class="'.(str_starts_with($r, $prefixe) ? 'actif' : '').'"><span>'.e($libelle).'</span>'
@@ -27,11 +32,20 @@
         @endphp
         {!! $lien('admin.dashboard', 'admin.dashboard', 'Tableau de bord') !!}
         {!! $lien('admin.gardes.index', 'admin.gardes', 'Gardes') !!}
+        {!! $lien('admin.gardes.declarations.index', 'admin.gardes.declarations', 'Déclarations de garde', $compteurs['declarations']) !!}
         {!! $lien('admin.etablissements.index', 'admin.etablissements', 'Établissements') !!}
+        {!! $lien('admin.geolocalisation.index', 'admin.geolocalisation', 'Géolocalisation', $compteurs['geoloc']) !!}
+        @if($compteurs['propositions'] > 0)
+            <a href="{{ route('admin.geolocalisation.index') }}#propositions"><span>Positions proposées</span><span class="compteur">{{ $compteurs['propositions'] }}</span></a>
+        @endif
+        {!! $lien('admin.doublons.index', 'admin.doublons', 'Doublons') !!}
         {!! $lien('admin.fiches.index', 'admin.fiches', 'Fiches', $compteurs['fiches']) !!}
+        {!! $lien('admin.avis.index', 'admin.avis', 'Avis', $compteurs['avis']) !!}
         {!! $lien('admin.messages.index', 'admin.messages', 'Messages', $compteurs['messages']) !!}
         @if(auth()->user()->isAdmin())
             {!! $lien('admin.publicites.index', 'admin.publicites', 'Publicité') !!}
+            {!! $lien('admin.premium.index', 'admin.premium', 'Fiches Premium') !!}
+            {!! $lien('admin.abonnements.index', 'admin.abonnements', 'Abonnements') !!}
         @endif
         {!! $lien('admin.alertes.index', 'admin.alertes', 'Alertes', $compteurs['alertes']) !!}
         @if(auth()->user()->isAdmin())

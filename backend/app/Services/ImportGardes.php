@@ -6,6 +6,7 @@ use App\Models\Etablissement;
 use App\Models\Garde;
 use App\Models\ImportLot;
 use App\Models\Ville;
+use App\Services\Garde\PharmacieMatcher;
 use Carbon\CarbonInterface;
 use DateTime;
 use Illuminate\Http\UploadedFile;
@@ -120,6 +121,171 @@ class ImportGardes
             'nb_erreurs' => count($resultats) - $valides,
             'created_by' => $auteurId,
         ]);
+    }
+
+    /** Le texte brut est-il un CSV avec en-têtes (nom;commune;…) plutôt qu'une liste libre ? */
+    public function ressembleACsv(string $texte): bool
+    {
+        $premiere = trim((string) strtok(ltrim($texte, "\xEF\xBB\xBF\r\n "), "\n"));
+        $cellules = preg_split('/[;,\t]/', $premiere) ?: [];
+        if (count($cellules) < 2) {
+            return false;
+        }
+        $entetes = array_map(fn ($c) => $this->entete((string) $c), $cellules);
+
+        return in_array('nom', $entetes, true) || in_array('id', $entetes, true);
+    }
+
+    /**
+     * Texte libre (PDF, photo/OCR, collé) : une pharmacie par ligne. Rapprochement flou avec les
+     * pharmacies de la ville ; seules les lignes sûres sont « ok », les autres attendent l'administrateur.
+     */
+    public function analyserTexte(string $texte, Ville $ville, CarbonInterface $debut, CarbonInterface $fin, ?int $auteurId, string $source): ImportLot
+    {
+        $pharmacies = Etablissement::query()
+            ->deCategorie('pharmacie')
+            ->dansVille($ville->id)
+            ->with('commune:id,nom')
+            ->get(['id', 'nom', 'commune_id', 'tel1', 'tel2', 'tel_autres']);
+
+        $matcher = new PharmacieMatcher;
+        $base = $matcher->preparer($pharmacies);
+
+        $resultats = [];
+        foreach (preg_split('/\n/', $texte) ?: [] as $i => $brut) {
+            $ligne = trim(preg_replace('/^\s*(?:\d{1,3}\s*[.)]|[-•*·▪●■□])\s+/u', '', trim($brut)) ?? '');
+            if (mb_strlen($ligne) < 3 || ! preg_match('/\pL{2}/u', $ligne)) {
+                continue;
+            }
+
+            $c = $matcher->classer($ligne, $base);
+            $top = $c['candidats'][0] ?? null;
+            $candidats = array_map(fn ($x) => [
+                'id' => $x['id'], 'nom' => $x['nom'], 'commune' => $x['commune'], 'score' => (int) round($x['score'] * 100),
+            ], $c['candidats']);
+
+            $r = [
+                'ligne' => $i + 1, 'nom' => Str::limit($ligne, 250, ''), 'commune' => '',
+                'etablissement_id' => null, 'etablissement_nom' => null,
+                'date_debut' => $debut->toDateString(), 'date_fin' => $fin->toDateString(),
+                'statut' => $c['statut'], 'message' => null,
+                'score' => (int) round($c['score'] * 100), 'candidats' => $candidats,
+                'confirme' => false, 'ignore' => false,
+            ];
+
+            if ($c['statut'] === 'ok') {
+                $r['etablissement_id'] = $top['id'];
+                $r['etablissement_nom'] = $top['nom'].' ('.$top['commune'].')';
+            }
+            // « a_verifier » : le meilleur candidat reste dans « candidats » mais la ligne n'est rattachée à rien
+            // tant que l'administrateur n'a pas confirmé : elle ne peut pas être publiée par erreur.
+            $r['message'] = match ($c['statut']) {
+                'ok' => null,
+                'a_verifier' => 'À confirmer : vérifiez la pharmacie proposée puis enregistrez.',
+                default => $candidats
+                    ? 'Correspondance trop incertaine : choisissez la pharmacie ou ignorez la ligne.'
+                    : 'Aucune pharmacie reconnue : choisissez-la ou ignorez la ligne.',
+            };
+
+            $resultats[] = $r;
+            if (count($resultats) >= 500) {
+                break;
+            }
+        }
+
+        if ($resultats === []) {
+            throw ValidationException::withMessages(['fichier' => 'Aucune ligne exploitable dans ce texte.']);
+        }
+
+        $resultats = $this->controlerDoublons($resultats);
+        $nbOk = count(array_filter($resultats, fn ($r) => $r['statut'] === 'ok'));
+
+        return ImportLot::create([
+            'ville_id' => $ville->id,
+            'date_debut' => $debut->toDateString(),
+            'date_fin' => $fin->toDateString(),
+            'fichier_nom' => Str::limit($source, 250, ''),
+            'statut' => 'apercu',
+            'lignes' => $resultats,
+            'nb_valides' => $nbOk,
+            'nb_erreurs' => count($resultats) - $nbOk,
+            'created_by' => $auteurId,
+        ]);
+    }
+
+    /**
+     * Applique les choix de l'administrateur (n° de ligne => id de pharmacie ; null ou '' = ignorer)
+     * sur un lot en aperçu. Seul un choix explicite rend une ligne floue « ok » (hors doublon).
+     *
+     * @param  array<int|string, int|string|null>  $choix
+     */
+    public function appliquerChoix(ImportLot $lot, array $choix): ImportLot
+    {
+        abort_unless($lot->statut === 'apercu', 409, 'Ce lot a déjà été traité.');
+
+        $valides = Etablissement::query()->deCategorie('pharmacie')->dansVille($lot->ville_id)
+            ->with('commune:id,nom')->get(['id', 'nom', 'commune_id'])->keyBy('id');
+
+        $lignes = $lot->lignes;
+        foreach ($lignes as &$l) {
+            if (! array_key_exists($l['ligne'], $choix)) {
+                continue;
+            }
+            $id = $choix[$l['ligne']];
+            if ($id === null || $id === '') {
+                $l = array_merge($l, ['etablissement_id' => null, 'etablissement_nom' => null, 'statut' => 'erreur',
+                    'message' => 'Ligne ignorée.', 'ignore' => true, 'confirme' => false]);
+
+                continue;
+            }
+            $etab = $valides->get((int) $id);
+            if (! $etab) {
+                $l = array_merge($l, ['etablissement_id' => null, 'etablissement_nom' => null, 'statut' => 'erreur',
+                    'message' => 'Pharmacie introuvable dans cette ville.', 'ignore' => false, 'confirme' => false]);
+
+                continue;
+            }
+            $l = array_merge($l, ['etablissement_id' => $etab->id, 'etablissement_nom' => $etab->nom.' ('.($etab->commune->nom ?? '').')',
+                'statut' => 'ok', 'message' => null, 'ignore' => false, 'confirme' => true]);
+        }
+        unset($l);
+
+        $lignes = $this->controlerDoublons($lignes);
+        $nbOk = count(array_filter($lignes, fn ($r) => $r['statut'] === 'ok'));
+        $lot->update(['lignes' => $lignes, 'nb_valides' => $nbOk, 'nb_erreurs' => count($lignes) - $nbOk]);
+
+        return $lot;
+    }
+
+    /**
+     * Parmi les lignes rattachées à une pharmacie : repère les doublons dans le lot et les gardes déjà existantes.
+     *
+     * @param  array<int, array<string, mixed>>  $lignes
+     * @return array<int, array<string, mixed>>
+     */
+    private function controlerDoublons(array $lignes): array
+    {
+        $vus = [];
+        foreach ($lignes as &$r) {
+            if ($r['etablissement_id'] === null || ! in_array($r['statut'], ['ok', 'doublon'], true)) {
+                continue;
+            }
+            $r['statut'] = 'ok';
+            $r['message'] = null;
+
+            if (isset($vus[$r['etablissement_id']])) {
+                $r['statut'] = 'doublon';
+                $r['message'] = "En double avec la ligne {$vus[$r['etablissement_id']]}.";
+            } elseif (Garde::where('etablissement_id', $r['etablissement_id'])->chevauche($r['date_debut'], $r['date_fin'])->exists()) {
+                $r['statut'] = 'doublon';
+                $r['message'] = 'Déjà de garde sur cette période : ligne ignorée.';
+            } else {
+                $vus[$r['etablissement_id']] = $r['ligne'];
+            }
+        }
+        unset($r);
+
+        return $lignes;
     }
 
     public function publier(ImportLot $lot): int

@@ -42,13 +42,36 @@ Mettre `APP_URL` à l'adresse réelle : elle sert aux liens envoyés par SMS (ca
 En développement : `php artisan queue:work` et `php artisan schedule:work` dans deux terminaux.
 En production : Supervisor (ou service Windows) pour la file, cron (ou Planificateur de tâches) pour `schedule:run`.
 
+### Exploitation (supervision, sauvegardes, santé)
+
+- **Santé** : `GET /api/v1/sante` (public, minimal : `status`, `db`, `queue`, `scheduler`) et carte « Santé du système » du tableau de bord (admin) : base, file d'attente (alerte si le plus ancien travail attend plus de 120 s), travaux en échec, battement du planificateur (`bravido:heartbeat` chaque minute ; alerte si > 3 min), FCM, espace disque (< 1 Go).
+- **Planificateur** (indispensable : clôture des alertes, trajets, purge, battement, expiration des abonnements) :
+  `schtasks /Create /TN "BRAVIDO schedule" /SC MINUTE /MO 1 /TR "C:\wamp64\bin\php\php8.5.0\php.exe C:\wamp64\www\bravido\backend\artisan schedule:run"`
+- **Surveillance du worker** : `outils\surveillance.ps1` interroge `/sante` et relance `backend\demarrer-worker.ps1` si la file est bloquée ou si aucun worker ne tourne. À enregistrer une fois (non fait automatiquement), toutes les minutes :
+  `schtasks /Create /TN "BRAVIDO surveillance" /SC MINUTE /MO 1 /RL HIGHEST /TR "powershell.exe -NoProfile -ExecutionPolicy Bypass -File C:\wamp64\www\bravido\outils\surveillance.ps1"` (journal : `backend\storage\logs\surveillance.log`).
+- **Sauvegardes** : base `bravido` (`mysqldump`) chaque nuit et dossier `backend\storage\app` (messages vocaux, pièces, photos) ; conserver au moins 7 jours hors du serveur. Journaux dans `backend\storage\logs`.
+- **Conservation** (`bravido:purger`, 02:30) : positions d'alerte, messages vocaux et trajets 30 jours ; journal d'audit des alertes 12 mois ; positions proposées 90 jours.
+- **Paiement** : variables `PAIEMENT_SANDBOX` (mettre `false` en production) et clés des fournisseurs dans `.env` (voir `.env.example`).
+
 ### Tests
 
 ```
-php artisan test
+php artisan test            # backend (base MySQL bravido_test, voir phpunit.xml)
+cd ../mobile && flutter analyze lib && flutter test
 ```
 
-(base MySQL `bravido_test`, voir `phpunit.xml`)
+L'intégration continue (`.github/workflows/tests.yml`) lance les deux (PHP 8.2 + MySQL, Flutter).
+
+### Fonctions de la vague 4
+
+| Fonction | Résumé |
+|---|---|
+| Journal d'audit des alertes (F22) | Table `alerte_evenements` sans donnée personnelle ; détail et export CSV au back-office |
+| Supervision (F23) | `/sante`, carte du tableau de bord, `outils\surveillance.ps1`, tests Flutter à API simulée |
+| Hors ligne (F20) | `GET /villes/{id}/export` (version, ETag, gzip) ; Réglages > Utiliser hors ligne ; moteur de recherche local (`mobile/lib/core/moteur_local.dart`, synonymes générés par `php outils\generer-synonymes.php`). Fonds de carte non mis en cache |
+| Avis et notes (F13) | Pré-modération au back-office, réponses des responsables, signalements ; aucun avis sur les centres de secours et bureaux FGA |
+| Rapports d'erreurs (F21) | Crashlytics désactivé par défaut, interrupteur dans Réglages ; à activer une fois dans la console Firebase |
+| Abonnement famille (F19) | Plans, paiements sandbox signés (HMAC), adaptateurs Orange Money / MTN MoMo / Wave vides ; les alertes ne dépendent jamais d'un abonnement |
 
 ## Ce qui est livré (lot MVP du cahier des charges)
 

@@ -1,0 +1,11 @@
+# Progres vague 1 securite (F5-F8)
+- [etat initial constate] Backend F5/F6/F7 implementes, migrations appliquees, `php artisan test` = 72 verts. Mobile: ecrans fiche_medicale, message_vocal, trajet, faux_appel, reglages, sos_silencieux existent; `flutter analyze lib` propre. Reste: verifications mobile, tests Dart, build APK, E2E API, captures, COMMENT-TESTER.
+- F5 fiche medicale: API testee E2E (A partage -> B voit la fiche dans alertes-recues; B GET propre fiche vide). Tests PHP verts. Mobile ecran present.
+- F6 message vocal: API testee E2E (upload 20 Ko ok, B telecharge 200, >1,5 Mo 422, push job NotifierNouvelAudio ok). Alerte id 14 (A) laissee active pour captures -> a fermer.
+- COMMENT-TESTER.md: section F deja redigee. Build APK debug lance.
+- Mobile build debug OK, installe sur emulator. Capture 01-alerte-recue-fiche-vocal.png (carte Infos medicales + lecteur vocal sur alerte recue B). Hub tuiles Je rentre chez moi / Faux appel visibles (00-accueil.png).
+- F6 lecture message vocal validee sur emulator (02-lecture-message-vocal.png).
+- F7 trajet: API E2E ok (demarrer, position, suivis par B, prolonger, rappel a l'echeance, alerte auto apres grace motif autre 'Trajet non confirme' avec derniere position + fiche visible par B). Alertes 14 et 15 cloturees. Reste: captures UI trajet, fiche, faux appel, mode discret.
+- F7 UI ok: 03-trajet-demarrage.png, 04-trajet-en-cours.png; arrive teste via UI (trajet B termine).
+- F8 UI ok: 05/06/07 faux appel (prepa, entrant, conversation). Reste: fiche medicale UI, mode discret toggle, retour accueil.
+- Captures completes (00..10). Alertes/trajets nettoyes. App sur l'accueil. TERMINE: rapport final a rediger.

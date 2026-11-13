@@ -7,6 +7,7 @@ use App\Models\Etablissement;
 use App\Models\Garde;
 use App\Models\ImportLot;
 use App\Models\Ville;
+use App\Services\Garde\ExtracteurTexte;
 use App\Services\ImportGardes;
 use App\Support\Journal;
 use Illuminate\Contracts\View\View;
@@ -35,25 +36,48 @@ class GardeController extends Controller
             'villes' => Ville::where('actif', true)->orderBy('nom')->get(),
             'debut' => $debut->toDateString(),
             'fin' => $debut->copy()->addDays(6)->toDateString(),
+            'ocr' => ExtracteurTexte::ocrDisponible(),
         ]);
     }
 
-    public function store(Request $request, ImportGardes $import): RedirectResponse
+    /**
+     * Import d'un programme : tableau (CSV / Excel, colonnes nom/commune/dates) ou document libre
+     * (PDF texte, .txt, texte collé, photo via OCR) rapproché de façon floue des pharmacies de la ville.
+     */
+    public function store(Request $request, ImportGardes $import, ExtracteurTexte $extracteur): RedirectResponse
     {
         $data = $request->validate([
             'ville_id' => ['required', 'integer', 'exists:villes,id'],
             'date_debut' => ['required', 'date'],
             'date_fin' => ['required', 'date', 'after_or_equal:date_debut'],
-            'fichier' => ['required', 'file', 'mimes:csv,txt,xlsx,xls', 'max:5120'],
+            'fichier' => ['nullable', 'required_without:texte', 'file', 'max:10240',
+                'mimes:csv,txt,xlsx,xls,pdf,'.implode(',', ExtracteurTexte::EXT_IMAGES)],
+            'texte' => ['nullable', 'required_without:fichier', 'string', 'max:200000'],
+        ], [
+            'fichier.required_without' => 'Joignez un fichier ou collez le texte du programme.',
+            'texte.required_without' => 'Joignez un fichier ou collez le texte du programme.',
         ]);
 
-        $lot = $import->analyser(
-            $request->file('fichier'),
-            Ville::findOrFail($data['ville_id']),
-            Carbon::parse($data['date_debut']),
-            Carbon::parse($data['date_fin']),
-            $request->user()->id
-        );
+        $ville = Ville::findOrFail($data['ville_id']);
+        $debut = Carbon::parse($data['date_debut']);
+        $fin = Carbon::parse($data['date_fin']);
+        $fichier = $request->file('fichier');
+        $texteSaisi = trim((string) ($data['texte'] ?? ''));
+
+        if ($fichier) {
+            $ext = strtolower($fichier->getClientOriginalExtension());
+            $tableur = in_array($ext, ['csv', 'xlsx', 'xls'], true);
+
+            if (! $tableur && $ext === 'txt' && $import->ressembleACsv($extracteur->enUtf8((string) file_get_contents($fichier->getRealPath())))) {
+                $tableur = true; // « .txt » qui est en réalité un CSV à en-têtes
+            }
+
+            $lot = $tableur
+                ? $import->analyser($fichier, $ville, $debut, $fin, $request->user()->id)
+                : $import->analyserTexte($extracteur->depuisFichier($fichier), $ville, $debut, $fin, $request->user()->id, $fichier->getClientOriginalName());
+        } else {
+            $lot = $import->analyserTexte($extracteur->nettoyer($texteSaisi), $ville, $debut, $fin, $request->user()->id, 'Texte collé');
+        }
 
         Journal::log('gardes.import', $lot, null, ['valides' => $lot->nb_valides, 'erreurs' => $lot->nb_erreurs]);
 
@@ -62,7 +86,41 @@ class GardeController extends Controller
 
     public function show(ImportLot $lot): View
     {
-        return view('admin.gardes.show', ['lot' => $lot->load(['ville', 'auteur'])]);
+        $lot->load(['ville', 'auteur']);
+        $flou = collect($lot->lignes)->contains(fn ($l) => array_key_exists('candidats', $l));
+        $pharmacies = ($flou && $lot->statut === 'apercu')
+            ? Etablissement::query()->deCategorie('pharmacie')->dansVille($lot->ville_id)->with('commune:id,nom')
+                ->orderBy('nom')->get(['id', 'nom', 'commune_id'])
+            : collect();
+
+        return view('admin.gardes.show', ['lot' => $lot, 'flou' => $flou, 'pharmacies' => $pharmacies]);
+    }
+
+    /** Enregistre les correspondances choisies par l'administrateur (lot issu d'un texte/PDF/photo). */
+    public function corriger(Request $request, ImportLot $lot, ImportGardes $import): RedirectResponse
+    {
+        abort_unless($lot->statut === 'apercu', 409, 'Ce lot a déjà été traité.');
+
+        $data = $request->validate([
+            'choix' => ['required', 'array'],
+            'choix.*' => ['nullable', 'string', 'max:300'],
+        ]);
+
+        $choix = [];
+        foreach ($data['choix'] as $ligne => $valeur) {
+            $valeur = trim((string) $valeur);
+            // « 123 » (liste déroulante) ou « Nom (Commune) #123 » (recherche)
+            $choix[(int) $ligne] = match (true) {
+                ctype_digit($valeur) => $valeur,
+                (bool) preg_match('/#(\d+)\s*$/', $valeur, $m) => $m[1],
+                default => null,
+            };
+        }
+
+        $import->appliquerChoix($lot, $choix);
+        Journal::log('gardes.correspondances', $lot, null, ['valides' => $lot->nb_valides, 'a_revoir' => $lot->nb_erreurs]);
+
+        return redirect()->route('admin.gardes.show', $lot)->with('succes', "Correspondances enregistrées : {$lot->nb_valides} garde(s) prête(s) à publier.");
     }
 
     public function publier(ImportLot $lot, ImportGardes $import): RedirectResponse

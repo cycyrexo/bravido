@@ -65,6 +65,18 @@ class User extends Authenticatable
         return $this->role === 'admin';
     }
 
+    /**
+     * F19 : abonnement famille en cours dont l'utilisateur bénéficie (propriétaire ou membre ayant accepté).
+     * Avantages NON critiques uniquement : ne JAMAIS l'utiliser pour limiter ou retarder une alerte.
+     */
+    public function abonnementEnCours(): ?Abonnement
+    {
+        return Abonnement::enCours()
+            ->where(fn ($q) => $q->where('user_id', $this->id)
+                ->orWhereHas('membres', fn ($m) => $m->where('user_id', $this->id)->where('statut', 'accepte')))
+            ->with('plan')->latest('fin')->first();
+    }
+
     public function nomAffiche(): string
     {
         return $this->nom ?: $this->telephone;

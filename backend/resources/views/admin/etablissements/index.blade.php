@@ -35,6 +35,7 @@
         <p class="muted">
             <span class="pastille orange">{{ number_format($aGeolocaliser, 0, ',', ' ') }} à géolocaliser</span>
             Ces établissements n'ont qu'une position approximative (centre de la commune) : l'application ne leur affiche pas de distance.
+            <a href="{{ route('admin.geolocalisation.index') }}" class="btn petit">Ouvrir l'assistant de géolocalisation</a>
             <a href="{{ route('admin.etablissements.index', ['position' => 'approx']) }}">Voir la liste</a>
         </p>
     @endif

@@ -1,4 +1,5 @@
 import 'dart:async';
+import '../../core/langue.dart';
 
 import 'package:flutter/material.dart';
 
@@ -7,6 +8,7 @@ import '../../core/api.dart';
 import '../../core/outils.dart';
 import '../../core/suivi_alerte.dart';
 import '../../widgets/communs.dart';
+import 'message_vocal.dart';
 import 'sos_screen.dart';
 
 /// Suivi de l'alerte par la personne protégée (URG-03, URG-04) :
@@ -64,13 +66,13 @@ class _AlerteActiveScreenState extends State<AlerteActiveScreen> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(annuler ? 'Annuler l\'alerte ?' : 'Clôturer l\'alerte ?'),
+        title: Text(annuler ? tr('Annuler l\'alerte ?', 'Cancel the alert?') : tr('Clôturer l\'alerte ?', 'Close the alert?')),
         content: Text(annuler
-            ? 'Vos complices seront prévenus qu\'il s\'agissait d\'une erreur.'
-            : 'Vos complices seront prévenus que vous êtes en sécurité. Le partage de position s\'arrête.'),
+            ? tr('Vos complices seront prévenus qu\'il s\'agissait d\'une erreur.', 'Your accomplices will be told it was a mistake.')
+            : tr('Vos complices seront prévenus que vous êtes en sécurité. Le partage de position s\'arrête.', 'Your accomplices will be told you are safe. Location sharing stops.')),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Non')),
-          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Oui')),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: Text(tr('Non', 'No'))),
+          FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(tr('Oui', 'Yes'))),
         ],
       ),
     );
@@ -104,9 +106,9 @@ class _AlerteActiveScreenState extends State<AlerteActiveScreen> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: _active ? Couleurs.rougeClair : Colors.white,
+              color: _active ? Couleurs.rougeClair : Couleurs.surface,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: _active ? const Color(0xFFF3C4C0) : Couleurs.bord),
+              border: Border.all(color: _active ? Couleurs.bordRouge : Couleurs.bord),
               boxShadow: _active ? null : Couleurs.ombre,
             ),
             child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -120,15 +122,16 @@ class _AlerteActiveScreenState extends State<AlerteActiveScreen> {
               Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(
                 _active ? 'Alerte « ${_alerte['motif_libelle']} » active' : 'Alerte « ${_alerte['motif_libelle']} » terminée',
-                style: TextStyle(color: _active ? Couleurs.rougeFonce : Couleurs.texte, fontWeight: FontWeight.w800, fontSize: 16),
+                style: TextStyle(color: _active ? Couleurs.encreRouge : Couleurs.texte, fontWeight: FontWeight.w800, fontSize: 16),
               ),
               const SizedBox(height: 4),
               Text(
                 _active
-                    ? 'Position partagée · mise à jour toutes les 30 s jusqu\'à ${formatHeure('${_alerte['expires_at']}')}, '
-                        'même téléphone verrouillé.'
-                    : 'Déclenchée à ${formatHeure('${_alerte['started_at']}')}. Le partage de position est arrêté.',
-                style: const TextStyle(color: Color(0xFF4A5A62), fontSize: 13, height: 1.35),
+                    ? tr('Position partagée · mise à jour toutes les 30 s jusqu\'à ${formatHeure('${_alerte['expires_at']}')}, '
+                        'même téléphone verrouillé.', 'Location shared · updated every 30 s until ${formatHeure('${_alerte['expires_at']}')}, '
+                        'even when the phone is locked.')
+                    : tr('Déclenchée à ${formatHeure('${_alerte['started_at']}')}. Le partage de position est arrêté.', 'Triggered at ${formatHeure('${_alerte['started_at']}')}. Location sharing has stopped.'),
+                style: TextStyle(color: Couleurs.texteSecondaire, fontSize: 13, height: 1.35),
               ),
               ValueListenableBuilder<DateTime?>(
                 valueListenable: SuiviAlerte.dernierEnvoi,
@@ -136,24 +139,33 @@ class _AlerteActiveScreenState extends State<AlerteActiveScreen> {
                     ? const SizedBox.shrink()
                     : Padding(
                         padding: const EdgeInsets.only(top: 8),
-                        child: Pastille.rouge('Dernière position envoyée à ${formatHeure(date.toIso8601String())}'),
+                        child: Pastille.rouge(tr('Dernière position envoyée à ${formatHeure(date.toIso8601String())}', 'Last position sent at ${formatHeure(date.toIso8601String())}')),
                       ),
               ),
             ])),
             ]),
           ),
-          const TitreSection('Vos complices'),
+          TitreSection(tr('Vos complices', 'Your accomplices')),
           for (final d in destinataires) _ligneComplice(d),
           if (destinataires.isEmpty)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 8),
-              child: Text('Aucun complice prévenu.', style: TextStyle(color: Couleurs.texteSecondaire)),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Text(tr('Aucun complice prévenu.', 'No accomplice alerted.'), style: TextStyle(color: Couleurs.texteSecondaire)),
             ),
+          if (_active) ...[
+            const SizedBox(height: 6),
+            BoutonMessageVocal(alerteId: _id, onEnvoye: () {
+              afficherMessage(context, tr('Message vocal envoyé à vos complices.', 'Voice message sent to your accomplices.'));
+              _rafraichir();
+            }),
+          ],
+          if (((_alerte['audios'] as List?) ?? const []).isNotEmpty)
+            ListeMessagesVocaux(alerteId: _id, audios: (_alerte['audios'] as List).cast<Map>()),
           const SizedBox(height: 14),
-          const Row(children: [
-            Expanded(child: BoutonUrgence('185', 'SAMU')),
-            SizedBox(width: 12),
-            Expanded(child: BoutonUrgence('180', 'Pompiers')),
+          Row(children: [
+            const Expanded(child: BoutonUrgence('185', 'SAMU')),
+            const SizedBox(width: 12),
+            Expanded(child: BoutonUrgence('180', tr('Pompiers', 'Fire brigade'))),
           ]),
           if (_active) ...[
             const SizedBox(height: 12),
@@ -161,13 +173,13 @@ class _AlerteActiveScreenState extends State<AlerteActiveScreen> {
               style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
               onPressed: () => _terminer(annuler: false),
               icon: const Icon(Icons.verified_user_outlined, size: 19),
-              label: const Text('Je suis en sécurité'),
+              label: Text(tr('Je suis en sécurité', 'I am safe')),
             ),
             const SizedBox(height: 4),
             TextButton(
               style: TextButton.styleFrom(foregroundColor: Couleurs.texteSecondaire, minimumSize: const Size.fromHeight(46)),
               onPressed: () => _terminer(annuler: true),
-              child: const Text('Fausse manipulation : annuler l\'alerte'),
+              child: Text(tr('Fausse manipulation : annuler l\'alerte', 'Accidental trigger: cancel the alert')),
             ),
           ],
         ],
@@ -177,12 +189,12 @@ class _AlerteActiveScreenState extends State<AlerteActiveScreen> {
 
   Widget _ligneComplice(Map d) {
     final pastille = switch ('${d['etat']}') {
-      'j_arrive' => const Pastille.verte('J\'arrive'),
-      'appelle_secours' => const Pastille.rouge('Appelle les secours'),
-      'vue' => const Pastille.verte('Vue'),
-      'recue' => const Pastille.verte('Reçue'),
-      'envoyee' => const Pastille.grise('Envoyée'),
-      _ => const Pastille.orange('En attente'),
+      'j_arrive' => Pastille.verte(tr('J\'arrive', 'On my way')),
+      'appelle_secours' => Pastille.rouge(tr('Appelle les secours', 'Calling emergency services')),
+      'vue' => Pastille.verte(tr('Vue', 'Seen')),
+      'recue' => Pastille.verte(tr('Reçue', 'Received')),
+      'envoyee' => Pastille.grise(tr('Envoyée', 'Sent')),
+      _ => Pastille.orange(tr('En attente', 'Pending')),
     };
 
     return Card(
@@ -197,7 +209,7 @@ class _AlerteActiveScreenState extends State<AlerteActiveScreen> {
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text('${d['nom']}', style: const TextStyle(fontWeight: FontWeight.w700)),
                 Text(d['canal_sms'] == true ? 'Push + SMS de secours' : 'Notification push',
-                    style: const TextStyle(color: Couleurs.texteSecondaire, fontSize: 13)),
+                    style: TextStyle(color: Couleurs.texteSecondaire, fontSize: 13)),
               ]),
             ),
             const SizedBox(width: 8),

@@ -10,9 +10,16 @@ import '../core/session.dart';
 import '../widgets/carrousel_pub.dart';
 import '../widgets/communs.dart';
 import 'alerte/alerte_screen.dart';
+import 'alerte/faux_appel_screen.dart';
 import 'alerte/sos_screen.dart';
+import 'alerte/trajet_screen.dart';
 import 'compte/compte_screen.dart';
+import 'compte/rappels_screen.dart';
+import '../core/langue.dart';
+import 'carte_screen.dart';
 import 'etablissements_screen.dart';
+import 'recherche_screen.dart';
+import 'reglages_screen.dart';
 import 'pharmacies_screen.dart';
 
 /// Accueil (ACC-01 à ACC-04).
@@ -93,39 +100,73 @@ class _HomeScreenState extends State<HomeScreen> {
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(18, 10, 18, 28),
                 children: [
-                  Align(alignment: Alignment.centerRight, child: _PuceVille(nom: session.nomVille, onTap: () => choisirVille(context))),
+                  Row(children: [
+                    Semantics(
+                      button: true,
+                      label: tr('Réglages', 'Settings'),
+                      child: IconButton(
+                        tooltip: tr('Réglages', 'Settings'),
+                        icon: Icon(Icons.settings_rounded, color: Couleurs.texteSecondaire),
+                        onPressed: () => _ouvrir(const ReglagesScreen()),
+                      ),
+                    ),
+                    const Spacer(),
+                    _PuceVille(nom: session.nomVille, onTap: () => choisirVille(context)),
+                  ]),
                   const SizedBox(height: 6),
                   const Center(child: Logo()),
                   const SizedBox(height: 8),
-                  const Center(
-                    child: Text('Partout et tout le temps',
+                  Center(
+                    child: Text(tr('Partout et tout le temps', 'Anywhere, anytime'),
                         style: TextStyle(color: Couleurs.texteSecondaire, fontSize: 15, letterSpacing: 0.2)),
                   ),
-                  const SizedBox(height: 22),
+                  const SizedBox(height: 16),
+                  const BarreRecherche(),
+                  const SizedBox(height: 16),
                   BoutonSos(
-                    texte: 'SOS · Alerter mes complices',
-                    sousTitre: 'Appui long de 3 s · votre position est partagée',
+                    texte: tr('SOS · Alerter mes complices', 'SOS · Alert my accomplices'),
+                    sousTitre: tr('Appui long de 3 s · votre position est partagée', 'Press and hold 3 s · your location is shared'),
                     onPressed: () => _ouvrir(const SosScreen()),
                   ),
                   const SizedBox(height: 18),
                   // IntrinsicHeight : les deux tuiles d'une ligne ont la même hauteur
                   IntrinsicHeight(
                     child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                      _Tuile('Alerte & Urgence', '185 · 180 · 110', Icons.emergency_rounded, Couleurs.rouge, Couleurs.rougeClair,
+                      _Tuile(tr('Alerte & Urgence', 'Alert & Emergency'), '185 · 180 · 110', Icons.emergency_rounded, Couleurs.rouge, Couleurs.rougeClair,
                           () => _ouvrir(const AlerteScreen())),
                       const SizedBox(width: 12),
-                      _Tuile('Pharmacies', 'Jour & Garde', Icons.local_pharmacy_rounded, const Color(0xFF2E9E3E), const Color(0xFFE2F5E5),
+                      _Tuile(tr('Pharmacies', 'Pharmacies'), tr('Jour & Garde', 'Day & On-duty'), Icons.local_pharmacy_rounded, const Color(0xFF2E9E3E), const Color(0xFFE2F5E5),
                           () => _ouvrir(const PharmaciesScreen())),
                     ]),
                   ),
                   const SizedBox(height: 12),
                   IntrinsicHeight(
                     child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                      _Tuile('Hôpitaux & Cliniques', 'Publics, privés, militaires', Icons.local_hospital_rounded, Couleurs.bleu,
+                      _Tuile(tr('Hôpitaux & Cliniques', 'Hospitals & Clinics'), tr('Publics, privés, militaires', 'Public, private, military'), Icons.local_hospital_rounded, Couleurs.bleu,
                           Couleurs.bleuClair, () => _ouvrir(const EtablissementsScreen.soins())),
                       const SizedBox(width: 12),
-                      _Tuile('Espace Utilisateur', session.connecte ? 'Compte et complices' : 'Se connecter', Icons.person_rounded,
+                      _Tuile(tr('Espace Utilisateur', 'My Account'), session.connecte ? tr('Compte et complices', 'Account and accomplices') : tr('Se connecter', 'Sign in'), Icons.person_rounded,
                           Couleurs.orange, Couleurs.orangeClair, () => _ouvrir(const CompteScreen())),
+                    ]),
+                  ),
+                  const SizedBox(height: 12),
+                  IntrinsicHeight(
+                    child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                      _Tuile(tr('Je rentre chez moi', 'Heading home'), tr('Trajet surveillé', 'Monitored trip'), Icons.directions_walk_rounded, Couleurs.vert, Couleurs.vertClair,
+                          () => _ouvrir(const TrajetScreen())),
+                      const SizedBox(width: 12),
+                      _Tuile(tr('Faux appel', 'Fake call'), tr('Et mode discret', 'And discreet mode'), Icons.phone_callback_rounded, const Color(0xFF6B4FD6), const Color(0xFFEDE8FB),
+                          () => _ouvrir(const FauxAppelScreen())),
+                    ]),
+                  ),
+                  const SizedBox(height: 12),
+                  IntrinsicHeight(
+                    child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                      _Tuile(tr('Carte', 'Map'), tr('Position exacte', 'Exact position'), Icons.map_rounded, const Color(0xFF0E8FB3),
+                          const Color(0xFFDFF3F9), () => _ouvrir(const CarteScreen())),
+                      const SizedBox(width: 12),
+                      _Tuile(tr('Rappels', 'Reminders'), tr('Médicaments, rendez-vous', 'Medication, visits'), Icons.alarm_rounded, const Color(0xFFB0307A),
+                          Couleurs.rose, () => _ouvrir(const RappelsScreen())),
                     ]),
                   ),
                   const SizedBox(height: 16),
@@ -133,20 +174,20 @@ class _HomeScreenState extends State<HomeScreen> {
                   if (_gardes != null) ...[
                     const SizedBox(height: 4),
                     _CarteGardes(
-                      periode: _gardes!['du'] != null ? 'Du ${_jm(_gardes!['du'])} au ${_jm(_gardes!['au'])}' : null,
-                      resume: '${_gardes!['nb']} pharmacie${_gardes!['nb'] == 1 ? '' : 's'} de garde à ${session.nomVille}',
+                      periode: _gardes!['du'] != null ? tr('Du ${_jm(_gardes!['du'])} au ${_jm(_gardes!['au'])}', 'From ${_jm(_gardes!['du'])} to ${_jm(_gardes!['au'])}') : null,
+                      resume: tr('${_gardes!['nb']} pharmacie${_gardes!['nb'] == 1 ? '' : 's'} de garde à ${session.nomVille}', '${_gardes!['nb']} on-duty pharmac${_gardes!['nb'] == 1 ? 'y' : 'ies'} in ${session.nomVille}'),
                       onTap: () => _ouvrir(const PharmaciesScreen()),
                     ),
                   ],
                   const SizedBox(height: 18),
-                  const Text('Appel d\'urgence direct', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+                  Text(tr('Appel d\'urgence direct', 'Direct emergency call'), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
                   const SizedBox(height: 10),
-                  const Row(children: [
-                    _AppelRapide('185', 'SAMU'),
-                    SizedBox(width: 10),
-                    _AppelRapide('180', 'Pompiers'),
-                    SizedBox(width: 10),
-                    _AppelRapide('110', 'Police'),
+                  Row(children: [
+                    const _AppelRapide('185', 'SAMU'),
+                    const SizedBox(width: 10),
+                    _AppelRapide('180', tr('Pompiers', 'Fire brigade')),
+                    const SizedBox(width: 10),
+                    _AppelRapide('110', tr('Police', 'Police')),
                   ]),
                 ],
               ),
@@ -172,11 +213,18 @@ class Logo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // `taille` garde l'ancienne échelle : 34 -> 56 px de haut.
-    return Image.asset(
+    final logo = Image.asset(
       'assets/images/logo-bravido.png',
       height: taille * 56 / 34,
       fit: BoxFit.contain,
       semanticLabel: 'BRAVIDO',
+    );
+    // Le logo a des lettres sombres : en thème sombre, on le pose sur une plaque claire
+    if (!Couleurs.sombre) return logo;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+      decoration: BoxDecoration(color: const Color(0xFFF4F7F8), borderRadius: BorderRadius.circular(18)),
+      child: logo,
     );
   }
 }
@@ -190,7 +238,7 @@ class _PuceVille extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.white,
+      color: Couleurs.surface,
       elevation: 2,
       shadowColor: const Color(0x330B2A33),
       borderRadius: BorderRadius.circular(99),
@@ -203,7 +251,7 @@ class _PuceVille extends StatelessWidget {
             const Icon(Icons.place_rounded, size: 16, color: Couleurs.sarcelle),
             const SizedBox(width: 4),
             Text(nom, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
-            const Icon(Icons.expand_more_rounded, size: 18, color: Couleurs.texteSecondaire),
+            Icon(Icons.expand_more_rounded, size: 18, color: Couleurs.texteSecondaire),
           ]),
         ),
       ),
@@ -225,7 +273,7 @@ class _Tuile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Expanded(
       child: Container(
-        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), boxShadow: Couleurs.ombre),
+        decoration: BoxDecoration(color: Couleurs.surface, borderRadius: BorderRadius.circular(20), boxShadow: Couleurs.ombre),
         child: Material(
           color: Colors.transparent,
           child: InkWell(
@@ -237,13 +285,13 @@ class _Tuile extends StatelessWidget {
                 Container(
                   width: 50,
                   height: 50,
-                  decoration: BoxDecoration(color: fond, borderRadius: BorderRadius.circular(15)),
-                  child: Icon(icone, color: couleur, size: 28),
+                  decoration: BoxDecoration(color: Couleurs.sombre ? couleur.withValues(alpha: 0.22) : fond, borderRadius: BorderRadius.circular(15)),
+                  child: Icon(icone, color: Couleurs.sombre ? Color.lerp(couleur, Colors.white, 0.4) : couleur, size: 28),
                 ),
                 const SizedBox(height: 14),
                 Text(titre, maxLines: 2, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15, height: 1.2)),
                 const SizedBox(height: 3),
-                Text(sousTitre, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Couleurs.texteSecondaire, fontSize: 12.5)),
+                Text(sousTitre, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: Couleurs.texteSecondaire, fontSize: 12.5)),
               ]),
             ),
           ),
@@ -285,16 +333,16 @@ class _CarteGardes extends StatelessWidget {
               const SizedBox(width: 14),
               Expanded(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  const Text('Pharmacies de garde près de vous',
-                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15)),
+                  Text(tr('Pharmacies de garde près de vous', 'On-duty pharmacies near you'),
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15)),
                   const SizedBox(height: 2),
                   Text([if (periode != null) periode!, resume].join(' · '), style: const TextStyle(color: Colors.white, fontSize: 13)),
                 ]),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(99)),
-                child: const Text('Voir', style: TextStyle(color: Couleurs.vert, fontWeight: FontWeight.w800)),
+                decoration: BoxDecoration(color: Couleurs.surface, borderRadius: BorderRadius.circular(99)),
+                child: Text(tr('Voir', 'View'), style: TextStyle(color: Couleurs.accent, fontWeight: FontWeight.w800)),
               ),
             ]),
           ),
@@ -315,9 +363,9 @@ class _AppelRapide extends StatelessWidget {
     return Expanded(
       child: Semantics(
         button: true,
-        label: 'Appeler le $numero, $libelle',
+        label: tr('Appeler le $numero, $libelle', 'Call $numero, $libelle'),
         child: Container(
-          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), boxShadow: Couleurs.ombre),
+          decoration: BoxDecoration(color: Couleurs.surface, borderRadius: BorderRadius.circular(16), boxShadow: Couleurs.ombre),
           child: Material(
             color: Colors.transparent,
             child: InkWell(
@@ -328,11 +376,11 @@ class _AppelRapide extends StatelessWidget {
                 child: ExcludeSemantics(
                   child: Column(children: [
                     Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                      const Icon(Icons.call_rounded, size: 16, color: Couleurs.rouge),
+                      Icon(Icons.call_rounded, size: 16, color: Couleurs.encreRouge),
                       const SizedBox(width: 4),
-                      Text(numero, style: const TextStyle(color: Couleurs.rouge, fontWeight: FontWeight.w900, fontSize: 18)),
+                      Text(numero, style: TextStyle(color: Couleurs.encreRouge, fontWeight: FontWeight.w900, fontSize: 18)),
                     ]),
-                    Text(libelle, style: const TextStyle(color: Couleurs.texteSecondaire, fontSize: 12.5)),
+                    Text(libelle, style: TextStyle(color: Couleurs.texteSecondaire, fontSize: 12.5)),
                   ]),
                 ),
               ),
@@ -419,11 +467,11 @@ class _ChoixVilleState extends State<_ChoixVille> {
         Padding(
           padding: const EdgeInsets.fromLTRB(18, 0, 18, 10),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Text('Choisir une ville', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
+            Text(tr('Choisir une ville', 'Choose a city'), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
             const SizedBox(height: 12),
             TextField(
               textInputAction: TextInputAction.search,
-              decoration: const InputDecoration(hintText: 'Rechercher une ville', prefixIcon: Icon(Icons.search_rounded)),
+              decoration: InputDecoration(hintText: tr('Rechercher une ville', 'Search a city'), prefixIcon: const Icon(Icons.search_rounded)),
               onChanged: (v) => setState(() => _recherche = v),
             ),
           ]),
@@ -448,13 +496,13 @@ class _ChoixVilleState extends State<_ChoixVille> {
                   leading: Container(
                     width: 40,
                     height: 40,
-                    decoration: const BoxDecoration(color: Couleurs.vertClair, shape: BoxShape.circle),
+                    decoration: BoxDecoration(color: Couleurs.vertClair, shape: BoxShape.circle),
                     child: _localisation
                         ? const Padding(padding: EdgeInsets.all(11), child: CircularProgressIndicator(strokeWidth: 2))
-                        : const Icon(Icons.my_location_rounded, color: Couleurs.vert, size: 20),
+                        : Icon(Icons.my_location_rounded, color: Couleurs.accent, size: 20),
                   ),
-                  title: const Text('Utiliser ma position', style: TextStyle(fontWeight: FontWeight.w700)),
-                  subtitle: const Text('Ville la plus proche de vous'),
+                  title: Text(tr('Utiliser ma position', 'Use my location'), style: const TextStyle(fontWeight: FontWeight.w700)),
+                  subtitle: Text(tr('Ville la plus proche de vous', 'Closest city to you')),
                   onTap: _localisation ? null : _maPosition,
                 );
               }
@@ -465,7 +513,7 @@ class _ChoixVilleState extends State<_ChoixVille> {
                 leading: Icon(Icons.place_rounded, color: choisie ? Couleurs.vert : const Color(0xFFB4C0C4)),
                 title: Text('${v['nom']}',
                     style: TextStyle(fontWeight: choisie ? FontWeight.w800 : FontWeight.w500, color: choisie ? Couleurs.vert : null)),
-                trailing: choisie ? const Icon(Icons.check_circle_rounded, color: Couleurs.vert) : null,
+                trailing: choisie ? Icon(Icons.check_circle_rounded, color: Couleurs.accent) : null,
                 onTap: () => Navigator.pop(context, v['id'] as int),
               );
             },

@@ -9,6 +9,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../app.dart';
 import '../config.dart';
 import '../screens/alerte/alerte_recue_screen.dart';
+import '../screens/alerte/trajet_screen.dart';
 import 'api.dart';
 import 'session.dart';
 
@@ -85,12 +86,14 @@ class Push {
 
   static void _ouvrir(RemoteMessage message) {
     final data = message.data;
-    if (data['type'] == 'alerte') {
+    if (data['type'] == 'alerte' || data['type'] == 'alerte_audio') {
       final id = int.tryParse('${data['alerte_id']}');
       if (id != null) {
         _accuser(id);
         navigatorKey.currentState?.push(MaterialPageRoute(builder: (_) => AlerteRecueScreen(alerteId: id)));
       }
+    } else if (data['type'] == 'trajet_rappel') {
+      navigatorKey.currentState?.push(MaterialPageRoute(builder: (_) => const TrajetScreen()));
     }
   }
 

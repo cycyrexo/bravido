@@ -36,7 +36,23 @@ class EtablissementResource extends JsonResource
             'responsable' => $this->responsable_nom,
             'horaires' => $this->horaires,
             'h24' => $this->h24,
-            'premium' => $this->premium,
+            'premium' => $this->estPremium(),
+            // Contenus réservés aux fiches Premium en cours de validité
+            'description_longue' => $this->when($this->estPremium() && $this->description_longue, fn () => $this->description_longue),
+            'horaires_detail' => $this->when($this->estPremium() && ! empty($this->horaires_detail), fn () => collect(\App\Http\Controllers\Api\MonEtablissementController::JOURS)
+                ->filter(fn ($j) => isset($this->horaires_detail[$j]))->mapWithKeys(fn ($j) => [$j => $this->horaires_detail[$j]])),
+            'photos' => $this->when($this->estPremium() && $this->relationLoaded('photos'), fn () => $this->photos->map(fn ($p) => [
+                'url' => $p->url(),
+                'id' => $p->id,
+                'miniature' => $p->urlMiniature(),
+            ])->values()),
+            // « À la une » : créneau sponsorisé en tête d'une liste (jamais pour les urgences)
+            'a_la_une' => $this->when(array_key_exists('a_la_une', $attributs), fn () => (bool) $attributs['a_la_une']),
+            // F13 : avis publiés (note moyenne sur 5 et nombre) ; la clé est absente quand les avis sont désactivés
+            'avis' => $this->when(array_key_exists('avis_nombre', $attributs), fn () => [
+                'nombre' => (int) $attributs['avis_nombre'],
+                'moyenne' => (int) $attributs['avis_nombre'] > 0 ? round((float) $attributs['avis_moyenne'], 1) : null,
+            ]),
             'verifie_at' => $this->verifie_at?->toIso8601String(),
             'distance_m' => $this->when(
                 isset($attributs['distance_m']), // NULL (position approximative) : clé absente, jamais « 0 m »

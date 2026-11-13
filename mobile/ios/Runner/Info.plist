@@ -2,6 +2,8 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>FirebaseCrashlyticsCollectionEnabled</key>
+	<false/>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>
@@ -18,6 +20,8 @@
 	</array>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>Pendant une alerte, BRAVIDO continue de transmettre votre position à vos complices même si l'application est en arrière-plan.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>BRAVIDO utilise le micro uniquement lorsque vous touchez « Enregistrer un message vocal » pendant une alerte, pour envoyer un message de 30 secondes maximum à vos complices.</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/langue.dart';
 import 'package:intl/intl.dart';
 
 import '../app.dart';
@@ -111,7 +112,7 @@ class _PharmaciesScreenState extends State<PharmaciesScreen> {
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 4),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Puces<bool>(
-          options: const {true: 'De garde', false: 'Toutes les pharmacies'},
+          options: {true: tr('De garde', 'On duty'), false: tr('Toutes les pharmacies', 'All pharmacies')},
           valeur: _garde,
           onChanged: (v) => setState(() => _garde = v),
         ),
@@ -121,20 +122,20 @@ class _PharmaciesScreenState extends State<PharmaciesScreen> {
             '',
             enrichi: TextSpan(children: [
               if (_periode != null) ...[
-                const TextSpan(text: 'Programme de garde du '),
+                TextSpan(text: tr('Programme de garde du ', 'On-duty schedule from ')),
                 TextSpan(text: _jm(_periode!['du']), style: const TextStyle(fontWeight: FontWeight.w800)),
-                const TextSpan(text: ' au '),
+                TextSpan(text: tr(' au ', ' to ')),
                 TextSpan(text: _jm(_periode!['au']), style: const TextStyle(fontWeight: FontWeight.w800)),
                 const TextSpan(text: '. '),
               ],
-              const TextSpan(text: 'La plus proche en tête de liste.'),
+              TextSpan(text: tr('La plus proche en tête de liste.', 'The closest comes first.')),
             ]),
           ),
         if (_garde && _horsLigneDepuis != null)
-          Bandeau('Hors ligne · liste enregistrée le ${DateFormat('dd/MM à HH:mm').format(_horsLigneDepuis!)}'),
+          Bandeau(tr('Hors ligne · liste enregistrée le ${DateFormat('dd/MM à HH:mm').format(_horsLigneDepuis!)}', 'Offline · list saved on ${DateFormat('dd/MM HH:mm').format(_horsLigneDepuis!)}')),
         TextField(
           textInputAction: TextInputAction.search,
-          decoration: const InputDecoration(hintText: 'Rechercher une pharmacie'),
+          decoration: InputDecoration(hintText: tr('Rechercher une pharmacie', 'Search a pharmacy')),
           onChanged: _garde ? (v) => setState(() => _recherche = v.trim()) : null,
           onSubmitted: (v) => setState(() => _recherche = v.trim()),
         ),
@@ -145,7 +146,7 @@ class _PharmaciesScreenState extends State<PharmaciesScreen> {
               initialValue: _communeId,
               isExpanded: true,
               items: [
-                const DropdownMenuItem(value: null, child: Text('Communes', maxLines: 1, overflow: TextOverflow.ellipsis)),
+                DropdownMenuItem(value: null, child: Text(tr('Communes', 'Districts'), maxLines: 1, overflow: TextOverflow.ellipsis)),
                 for (final c in communes) DropdownMenuItem(value: c['id'] as int, child: Text('${c['nom']}', maxLines: 1, overflow: TextOverflow.ellipsis)),
               ],
               onChanged: (v) => setState(() => _communeId = v),
@@ -157,7 +158,7 @@ class _PharmaciesScreenState extends State<PharmaciesScreen> {
               initialValue: _assuranceId,
               isExpanded: true,
               items: [
-                const DropdownMenuItem(value: null, child: Text('Assurances', maxLines: 1, overflow: TextOverflow.ellipsis)),
+                DropdownMenuItem(value: null, child: Text(tr('Assurances', 'Insurers'), maxLines: 1, overflow: TextOverflow.ellipsis)),
                 for (final a in session.assurances)
                   DropdownMenuItem(value: a['id'] as int, child: Text('${a['nom']}', maxLines: 1, overflow: TextOverflow.ellipsis)),
               ],
@@ -169,7 +170,7 @@ class _PharmaciesScreenState extends State<PharmaciesScreen> {
     );
 
     return Scaffold(
-      appBar: const BarreTitre('Pharmacies', actions: [SosAction()]),
+      appBar: BarreTitre(tr('Pharmacies', 'Pharmacies'), actions: const [SosAction()]),
       body: Column(children: [
         filtres,
         Expanded(
@@ -200,14 +201,14 @@ class _PharmaciesScreenState extends State<PharmaciesScreen> {
         padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
         children: [
           if (items.isEmpty)
-            const MessageVide('Aucune pharmacie de garde pour ces critères.', icone: Icons.local_pharmacy_outlined)
+            MessageVide(tr('Aucune pharmacie de garde pour ces critères.', 'No on-duty pharmacy for these criteria.'), icone: Icons.local_pharmacy_outlined)
           else
             for (final e in items) EtablissementTile(e),
           if (items.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(top: 8),
-              child: Text('${items.length} pharmacie${items.length > 1 ? 's' : ''} de garde',
-                  textAlign: TextAlign.center, style: const TextStyle(color: Couleurs.texteSecondaire, fontSize: 12)),
+              child: Text(tr('${items.length} pharmacie${items.length > 1 ? 's' : ''} de garde', '${items.length} on-duty pharmac${items.length > 1 ? 'ies' : 'y'}'),
+                  textAlign: TextAlign.center, style: TextStyle(color: Couleurs.texteSecondaire, fontSize: 12)),
             ),
         ],
       ),
