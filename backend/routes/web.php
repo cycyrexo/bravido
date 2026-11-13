@@ -20,6 +20,12 @@ Route::middleware('throttle:public-web')->group(function () {
     Route::post('paiement/sandbox/{reference}/{issue}', [\App\Http\Controllers\PaiementSandboxController::class, 'simuler'])->name('paiement.sandbox.simuler');
 });
 
+// ---- Téléchargement de l'APK de test (public, sans authentification) ----
+Route::middleware('throttle:public-web')->group(function () {
+    Route::get('telecharger', [\App\Http\Controllers\TelechargementController::class, 'page'])->name('telechargement.page');
+    Route::get('telecharger/bravido.apk', [\App\Http\Controllers\TelechargementController::class, 'apk'])->name('telechargement.apk');
+});
+
 // ---- Back-office ----
 Route::prefix('admin')->name('admin.')->group(function () {
     Route::middleware('guest')->group(function () {

@@ -371,3 +371,43 @@ Le script : active la maintenance → `git pull --ff-only` → `composer install
 | Modification du `.env` sans effet | `php artisan config:cache` |
 | Upload d'image refusé | `client_max_body_size` (nginx) et `upload_max_filesize` (php.ini) |
 | Certbot échoue | le DNS ne pointe pas encore vers le serveur, ou le port 80 est fermé |
+
+## 22. Publier l'APK de test (domaine `bravido.clikgrouptech.com`)
+
+Page publique : **https://bravido.clikgrouptech.com/telecharger** (bouton de téléchargement, QR code, mode d'emploi). Le serveur lit deux fichiers **hors dépôt git** dans `backend/storage/app/telechargement/` : `bravido-test.apk` et `bravido-test.apk.json` (version, date, taille, SHA-256 affichés sur la page). Tant que l'APK est absent, la page affiche « L'APK n'est pas encore disponible » et `/telecharger/bravido.apk` répond 404.
+
+Depuis votre PC (dossier `livrables/` du dépôt), remplacez `<utilisateur>`, `<hote>` et `<chemin>` (racine du projet sur le serveur) :
+
+```bash
+ssh <utilisateur>@<hote> "mkdir -p <chemin>/backend/storage/app/telechargement"
+scp livrables/bravido-test.apk livrables/bravido-test.apk.json \
+    <utilisateur>@<hote>:<chemin>/backend/storage/app/telechargement/
+ssh <utilisateur>@<hote> "sudo chown -R www-data:www-data <chemin>/backend/storage/app/telechargement && sudo chmod 644 <chemin>/backend/storage/app/telechargement/*"
+```
+
+Contrôle : `curl -sI https://bravido.clikgrouptech.com/telecharger/bravido.apk` doit afficher `200`, `Content-Type: application/vnd.android.package-archive` et `Content-Disposition: attachment`. Comparez ensuite `sha256sum` du fichier téléchargé avec la valeur affichée sur la page.
+
+Remarques serveur :
+
+- nginx : `client_max_body_size` ne concerne que les envois (uploads), pas les téléchargements ; rien à changer. Si le téléchargement s'arrête ou que le fichier arrive corrompu derrière un proxy, désactivez la compression pour les APK (`gzip off;` dans un `location ~* \.apk$` ou ne pas lister `application/vnd.android.package-archive` dans `gzip_types`, ce qui est déjà le cas ici). Le fichier est servi par Laravel (`/telecharger/bravido.apk`), donc l'emplacement n'a pas besoin d'être exposé directement.
+- Apache (hébergement mutualisé / panneau) : la racine web doit être `backend/public` ; vérifiez que `mod_rewrite` et le `.htaccess` de `public/` sont actifs. Une page « 500 Internal Server Error » générique d'Apache avant même Laravel indique en général une racine mal configurée, un `.htaccess` refusé (`AllowOverride All`) ou une version de PHP trop ancienne (8.2 minimum).
+- Cette APK de test est signée avec la clé de **debug** : suffisante pour une installation directe, **refusée par le Play Store** (une clé de publication sera nécessaire ensuite).
+
+### Rappel : clés `.env` du serveur pour ce domaine
+
+Dans `backend/.env` (puis `php artisan config:cache`) :
+
+```ini
+APP_URL=https://bravido.clikgrouptech.com
+APP_ENV=production
+APP_DEBUG=false
+ADMIN_PASSWORD=<mot-de-passe-fort>        # ne gardez pas le mot de passe d'exemple
+SMS_DRIVER=log                            # test : aucun SMS réel ; le code OTP n'est lisible que dans backend/storage/logs/laravel-*.log
+# OTP_CODE_TEST : ne fonctionne qu'avec APP_ENV=local, ne PAS l'utiliser en production
+FCM_PROJECT_ID=bravido-6a8dc
+FCM_CREDENTIALS=<chemin>/backend/storage/app/private/firebase-service-account.json
+```
+
+Avec `SMS_DRIVER=log`, pour se connecter depuis l'application, demandez le code puis lisez-le côté serveur : `grep -i otp <chemin>/backend/storage/logs/laravel-*.log | tail`. Pour de vrais SMS : étape 16 (`SMS_DRIVER=http`).
+
+Proxys de confiance : si le site est servi **directement** par nginx/Apache, rien à configurer. S'il passe derrière un CDN/proxy (Cloudflare, load balancer), l'IP des visiteurs (limitation de débit, journaux) et le schéma HTTPS ne sont corrects que si les proxys sont déclarés de confiance ; voir la note commentée dans `backend/bootstrap/app.php` (`$middleware->trustProxies(at: '*')` à n'activer que derrière un proxy maîtrisé).

@@ -55,3 +55,8 @@ outils/*.exe
 *.iml
 .DS_Store
 Thumbs.db
+
+# --- Livrables (APK de test, JSON associe) : jamais dans git ---
+livrables/
+*.apk
+mobile/build-release.log

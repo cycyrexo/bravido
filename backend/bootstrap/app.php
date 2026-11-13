@@ -15,6 +15,9 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        // Derriere un proxy/CDN (Cloudflare, load balancer) : decommenter pour que l'IP reelle et HTTPS soient detectes.
+        // Inutile si nginx/Apache sert directement l'application. Voir deploy/README-DEPLOIEMENT.md, etape 22.
+        // $middleware->trustProxies(at: '*');
         $middleware->alias(['role' => EnsureRole::class]);
         $middleware->throttleApi();
         $middleware->redirectGuestsTo(fn () => route('admin.login'));
