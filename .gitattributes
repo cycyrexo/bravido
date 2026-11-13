@@ -1,0 +1,3 @@
+*.sh text eol=lf
+*.conf text eol=lf
+deploy/*.txt text eol=lf

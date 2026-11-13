@@ -1,0 +1,10 @@
+# Taches planifiees BRAVIDO -- a installer avec :  sudo crontab -u www-data -e   (coller la ligne 1)
+# et, pour la sauvegarde (qui a besoin de lire le .env et d'ecrire dans /var/backups/bravido) :  sudo crontab -e  (coller la ligne 2)
+
+# 1) Planificateur Laravel : toutes les minutes (alertes, trajets, abonnements, purge a 02h30, etc.)
+* * * * * cd /var/www/bravido/backend && /usr/bin/php artisan schedule:run >> /dev/null 2>&1
+
+# 2) Sauvegarde MySQL quotidienne a 03h15 (voir backup-bravido.sh : rotation 14 jours)
+15 3 * * * /usr/local/bin/backup-bravido.sh >> /var/log/bravido-backup.log 2>&1
+
+# Rotation des journaux : /etc/logrotate.d/bravido (voir README-DEPLOIEMENT.md, etape 13)
